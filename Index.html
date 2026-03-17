@@ -1,0 +1,3519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kavach RFID — Tag Verification System</title>
+<style>
+  /* Offline-safe system font stack — replaces Google Fonts */
+  @font-face { font-family: 'Share Tech Mono'; src: local('Courier New'), local('Courier'); }
+</style>
+<script src="xlsx.full.min.js"></script>
+
+<style>
+  :root {
+    --bg:       #080A0E;
+    --bg2:      #0D1117;
+    --bg3:      #141920;
+    --bg4:      #1C2330;
+    --amber:    #F59E0B;
+    --amber2:   #FCD34D;
+    --red:      #EF4444;
+    --green:    #10B981;
+    --blue:     #3B82F6;
+    --cyan:     #06B6D4;
+    --muted:    #4B5563;
+    --text:     #E5E7EB;
+    --text2:    #9CA3AF;
+    --border:   #1F2937;
+    --mono:     'Courier New', 'Consolas', 'Lucida Console', monospace;
+    --sans:     'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --cond:     'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(245,158,11,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,158,11,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scanline effect */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: linear-gradient(180deg, rgba(8,10,14,0.98) 0%, rgba(8,10,14,0.85) 100%);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(245,158,11,0.15);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--amber);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-logo 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-logo {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+    50% { box-shadow: 0 0 20px 4px rgba(245,158,11,0.2); }
+  }
+
+  .header-title {
+    font-family: var(--cond);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .header-title span {
+    color: var(--amber);
+  }
+
+  .header-subtitle {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text2);
+    letter-spacing: 0.05em;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .file-count {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--amber);
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.2);
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+  }
+
+  /* ===== MAIN WRAPPER ===== */
+  .app {
+    position: relative;
+    padding-top: 64px;
+    min-height: 100vh;
+  }
+
+  /* ===== LANDING / SEARCH SCREEN ===== */
+  #screen-search {
+    min-height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  #screen-search.has-results {
+    padding-top: 2rem;
+    justify-content: flex-start;
+  }
+
+  .search-hero {
+    text-align: center;
+    margin-bottom: 3rem;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  #screen-search.has-results .search-hero {
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--amber);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    animation: fadeUp 0.6s ease forwards 0.2s;
+  }
+
+  .hero-title {
+    font-family: var(--cond);
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: var(--text);
+    animation: fadeUp 0.6s ease forwards 0.3s;
+  }
+
+  .hero-title em {
+    font-style: normal;
+    color: var(--amber);
+    -webkit-text-stroke: 0px;
+  }
+
+  .hero-desc {
+    font-size: 0.9rem;
+    color: var(--text2);
+    margin-top: 1rem;
+    letter-spacing: 0.02em;
+    animation: fadeUp 0.6s ease forwards 0.4s;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    width: 100%;
+    max-width: 680px;
+    border: 2px dashed rgba(245,158,11,0.3);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(245,158,11,0.03);
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.6s ease forwards 0.5s;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--amber);
+    background: rgba(245,158,11,0.07);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(245,158,11,0.1);
+  }
+
+  .upload-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    filter: grayscale(0.3);
+  }
+
+  .upload-text {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text2);
+    letter-spacing: 0.05em;
+  }
+
+  .upload-text strong {
+    color: var(--amber);
+  }
+
+  #file-input { display: none; }
+
+  /* Search box */
+  .search-container {
+    width: 100%;
+    max-width: 680px;
+    position: relative;
+    animation: fadeUp 0.6s ease forwards 0.6s;
+  }
+
+  .search-box {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem 1rem 3.5rem;
+    font-family: var(--mono);
+    font-size: 1rem;
+    color: var(--text);
+    outline: none;
+    transition: all 0.3s ease;
+    letter-spacing: 0.05em;
+  }
+
+  .search-box:focus {
+    border-color: rgba(245,158,11,0.5);
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.08), 0 0 30px rgba(245,158,11,0.05);
+  }
+
+  .search-box::placeholder {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--amber);
+    font-size: 1.1rem;
+    pointer-events: none;
+  }
+
+  .search-shortcut {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Suggestions */
+  .suggestions {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0; right: 0;
+    background: var(--bg3);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 50;
+    display: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .suggestions.visible { display: block; }
+
+  .suggestion-item {
+    padding: 0.75rem 1.25rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .suggestion-item:last-child { border-bottom: none; }
+
+  .suggestion-item:hover, .suggestion-item.active {
+    background: rgba(245,158,11,0.08);
+    color: var(--amber);
+  }
+
+  .suggestion-tag {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    background: var(--bg4);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-left: auto;
+    letter-spacing: 0.05em;
+  }
+
+  /* Loading state */
+  .loading-bar {
+    width: 100%;
+    max-width: 680px;
+    height: 2px;
+    background: var(--bg3);
+    border-radius: 2px;
+    margin-top: 0.75rem;
+    overflow: hidden;
+    display: none;
+    opacity: 0;
+    animation: fadeUp 0.3s ease forwards;
+  }
+
+  .loading-bar.visible { display: block; }
+
+  .loading-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--amber), var(--amber2));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 8px var(--amber);
+  }
+
+  .loading-text {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+    text-align: center;
+    display: none;
+  }
+
+  /* File chips */
+  .file-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    width: 100%;
+    max-width: 680px;
+    margin-top: 1rem;
+    opacity: 0;
+    animation: fadeUp 0.4s ease forwards 0.1s;
+  }
+
+  .file-chip {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--text2);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+    transition: all 0.2s ease;
+  }
+
+  .file-chip:hover {
+    border-color: rgba(245,158,11,0.3);
+    color: var(--amber);
+  }
+
+  /* ===== RESULTS GRID ===== */
+  .results-grid {
+    width: 100%;
+    max-width: 1100px;
+    margin: 1.5rem auto 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    padding: 0 1rem 2rem;
+  }
+
+  .result-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .result-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(245,158,11,0.05) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .result-card:hover {
+    border-color: rgba(245,158,11,0.35);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(245,158,11,0.1);
+  }
+
+  .result-card:hover::before { opacity: 1; }
+
+  @keyframes cardIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .card-section-name {
+    font-family: var(--cond);
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .card-loco-badge {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .badge-nominal {
+    background: rgba(59,130,246,0.15);
+    color: #60A5FA;
+    border: 1px solid rgba(59,130,246,0.25);
+  }
+
+  .badge-reverse {
+    background: rgba(245,158,11,0.12);
+    color: var(--amber);
+    border: 1px solid rgba(245,158,11,0.25);
+  }
+
+  .card-body {
+    padding: 1rem 1.25rem;
+  }
+
+  .stat-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .stat-chip {
+    flex: 1;
+    background: var(--bg3);
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+  }
+
+  .stat-chip:hover { border-color: rgba(255,255,255,0.1); }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 400;
+    line-height: 1;
+    margin-bottom: 0.2rem;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .stat-green .stat-value { color: var(--green); }
+  .stat-red   .stat-value { color: var(--red); }
+  .stat-amber .stat-value { color: var(--amber); }
+  .stat-blue  .stat-value { color: var(--blue); }
+
+  .card-progress {
+    height: 4px;
+    background: var(--bg4);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), #34D399);
+    border-radius: 2px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 6px rgba(16,185,129,0.4);
+  }
+
+  .card-footer {
+    padding: 0.6rem 1.25rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-loco-id {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .card-cta {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: gap 0.2s ease;
+  }
+
+  .result-card:hover .card-cta { gap: 0.5rem; }
+
+  /* ===== DETAIL VIEW ===== */
+  #screen-detail {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 200;
+    background: var(--bg);
+    transform: translateX(100%);
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-top: 28px;
+  }
+
+  #screen-detail.visible {
+    transform: translateX(0);
+  }
+
+  .detail-header {
+    height: 64px;
+    background: var(--bg);
+    border-bottom: 1px solid rgba(245,158,11,0.15);
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+
+  .back-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .back-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(245,158,11,0.05);
+  }
+
+  .detail-title-block {
+    flex: 1;
+  }
+
+  .detail-section-name {
+    font-family: var(--cond);
+    font-size: 1.3rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text);
+  }
+
+  .detail-meta {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* Page tabs */
+  .page-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .page-tab {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .page-tab.active {
+    background: rgba(245,158,11,0.12);
+    border-color: rgba(245,158,11,0.4);
+    color: var(--amber);
+    box-shadow: 0 0 16px rgba(245,158,11,0.08);
+  }
+
+  .page-tab:hover:not(.active) {
+    border-color: rgba(255,255,255,0.15);
+    color: var(--text2);
+  }
+
+  /* Pages container */
+  .pages-container {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .page {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    padding: 2rem;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .page::-webkit-scrollbar { width: 4px; }
+  .page::-webkit-scrollbar-track { background: transparent; }
+  .page::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .page.page-hidden-left  { transform: translateX(-60px); opacity: 0; pointer-events: none; }
+  .page.page-hidden-right { transform: translateX(60px);  opacity: 0; pointer-events: none; }
+  .page.page-visible      { transform: translateX(0);      opacity: 1; pointer-events: auto; }
+
+  /* ===== PAGE 1: TAG DATA ===== */
+  .page-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .kpi-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .kpi-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .kpi-green::after  { background: linear-gradient(90deg, var(--green), transparent); }
+  .kpi-red::after    { background: linear-gradient(90deg, var(--red), transparent); }
+  .kpi-amber::after  { background: linear-gradient(90deg, var(--amber), transparent); }
+  .kpi-blue::after   { background: linear-gradient(90deg, var(--blue), transparent); }
+
+  .kpi-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .kpi-value {
+    font-family: var(--mono);
+    font-size: 2.2rem;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .kpi-green .kpi-value  { color: var(--green); }
+  .kpi-red .kpi-value    { color: var(--red); }
+  .kpi-amber .kpi-value  { color: var(--amber); }
+  .kpi-blue .kpi-value   { color: var(--blue); }
+
+  .kpi-sub {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 0.35rem;
+  }
+
+  /* Tag table */
+  .section-title {
+    font-family: var(--cond);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--amber);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(245,158,11,0.3), transparent);
+  }
+
+  .tag-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+
+  .tag-table th {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    white-space: nowrap;
+  }
+
+  .tag-table td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: var(--text2);
+    transition: all 0.15s ease;
+    vertical-align: middle;
+  }
+
+  .tag-table tr:hover td {
+    background: rgba(245,158,11,0.03);
+    color: var(--text);
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .status-matched  { background: rgba(16,185,129,0.12); color: #34D399; border: 1px solid rgba(16,185,129,0.2); }
+  .status-missed   { background: rgba(239,68,68,0.12);  color: #F87171; border: 1px solid rgba(239,68,68,0.2); }
+  .status-mismatch { background: rgba(245,158,11,0.12); color: var(--amber2); border: 1px solid rgba(245,158,11,0.2); }
+  .status-unknown  { background: rgba(75,85,99,0.2);   color: var(--muted); border: 1px solid rgba(75,85,99,0.2); }
+
+  .tag-id-cell {
+    font-size: 0.65rem;
+    color: var(--text2);
+    font-family: var(--mono);
+    letter-spacing: 0.05em;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .filter-btn.active-all    { border-color: var(--blue);  color: var(--blue);  background: rgba(59,130,246,0.1); }
+  .filter-btn.active-match  { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); }
+  .filter-btn.active-missed { border-color: var(--red);   color: var(--red);   background: rgba(239,68,68,0.1); }
+  .filter-btn.active-mis    { border-color: var(--amber); color: var(--amber); background: rgba(245,158,11,0.1); }
+
+  /* ===== PAGE 2: PLACEMENT ===== */
+  .placement-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .placement-timeline::before {
+    content: '';
+    position: absolute;
+    left: 112px;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(245,158,11,0.2) 5%, rgba(245,158,11,0.2) 95%, transparent);
+  }
+
+  .timeline-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    padding: 0.6rem 0;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+  }
+
+  .timeline-row.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .timeline-abs {
+    width: 100px;
+    text-align: right;
+    padding-right: 1rem;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    padding-top: 0.1rem;
+    flex-shrink: 0;
+  }
+
+  .timeline-dot-wrap {
+    width: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    padding-top: 0.15rem;
+  }
+
+  .timeline-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid;
+    background: var(--bg);
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+
+  .dot-correct  { border-color: var(--green); box-shadow: 0 0 6px rgba(16,185,129,0.4); }
+  .dot-incorrect{ border-color: var(--red);   box-shadow: 0 0 6px rgba(239,68,68,0.4); }
+  .dot-missed   { border-color: var(--muted); }
+  .dot-unknown  { border-color: var(--muted); }
+
+  .timeline-content {
+    flex: 1;
+    padding-left: 1rem;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    margin-left: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .timeline-content:hover {
+    border-color: rgba(245,158,11,0.2);
+    background: rgba(245,158,11,0.02);
+  }
+
+  .timeline-tag-id {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+
+  .timeline-details {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  .timeline-detail-item {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .timeline-detail-item span {
+    color: var(--text2);
+  }
+
+  .error-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+  }
+
+  .error-bar-bg {
+    flex: 1;
+    height: 3px;
+    background: var(--bg4);
+    border-radius: 2px;
+    overflow: hidden;
+    max-width: 150px;
+  }
+
+  .error-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+
+  .error-text {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+  }
+
+  .error-pos { color: var(--red); }
+  .error-neg { color: var(--blue); }
+  .error-zero { color: var(--green); }
+
+  /* No data state */
+  .no-data {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+
+  .no-data-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+
+  .no-data-text {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Empty search state */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Transitions for screen */
+  #screen-search {
+    transition: opacity 0.3s ease;
+  }
+
+  #screen-search.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .page-grid { grid-template-columns: repeat(2, 1fr); }
+    .detail-section-name { font-size: 1rem; }
+    .hero-title { font-size: 2.5rem; }
+    .page { padding: 1rem; }
+  }
+
+  /* Scrollbar for results */
+  .results-grid::-webkit-scrollbar { width: 4px; }
+
+  /* Card selection */
+  .result-card { position: relative; }
+  .card-select-check {
+    position: absolute;
+    top: 0.6rem; right: 0.6rem;
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg3);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 5;
+    font-size: 10px;
+    color: transparent;
+  }
+  .result-card.selected .card-select-check {
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--bg);
+  }
+  .result-card.selected {
+    border-color: rgba(245,158,11,0.6);
+    box-shadow: 0 0 0 2px rgba(245,158,11,0.15);
+  }
+  /* Multi-select action bar */
+  .multi-bar {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--bg3);
+    border: 1px solid rgba(245,158,11,0.4);
+    border-radius: 10px;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 150;
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    white-space: nowrap;
+  }
+  .multi-bar.visible { transform: translateX(-50%) translateY(0); }
+  .multi-bar-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text2);
+    letter-spacing: 0.06em;
+  }
+  .multi-bar-label span { color: var(--amber); font-weight: 600; }
+  .multi-bar-btn {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    border: 1px solid;
+  }
+  .multi-bar-btn.primary {
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--bg);
+  }
+  .multi-bar-btn.primary:hover { background: var(--amber2); }
+  .multi-bar-btn.ghost {
+    background: none;
+    border-color: var(--border);
+    color: var(--muted);
+  }
+  .multi-bar-btn.ghost:hover { border-color: var(--text2); color: var(--text2); }
+
+  /* Section heading in multi view */
+  .section-heading {
+    font-family: var(--cond);
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--amber);
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.15);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    margin: 1.5rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section-heading::before {
+    content: '';
+    width: 4px; height: 16px;
+    background: var(--amber);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Sheet tabs */
+  .sheet-tabs {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+    overflow-x: auto;
+  }
+  .sheet-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 0.5rem 1rem 0.6rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    margin-bottom: -1px;
+    text-transform: uppercase;
+  }
+  .sheet-tab:hover { color: var(--text2); border-bottom-color: var(--border); }
+  .sheet-tab.active {
+    color: var(--amber);
+    border-bottom-color: var(--amber);
+    background: rgba(245,158,11,0.04);
+  }
+  .sheet-tab .tab-count {
+    display: inline-block;
+    font-size: 0.6rem;
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.05rem 0.35rem;
+    margin-left: 0.35rem;
+    color: var(--muted);
+    vertical-align: middle;
+  }
+  .sheet-tab.active .tab-count {
+    background: rgba(245,158,11,0.12);
+    border-color: rgba(245,158,11,0.3);
+    color: var(--amber);
+  }
+
+  /* Dynamic full-column table */
+  /* Top-scroll mirror container */
+  .table-scroll-wrapper {
+    position: relative;
+    margin-bottom: 0;
+  }
+  .top-scroller {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 12px;
+    border-radius: 6px 6px 0 0;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--amber) var(--bg4);
+    margin-bottom: 0;
+  }
+  .top-scroller::-webkit-scrollbar { height: 8px; }
+  .top-scroller::-webkit-scrollbar-track { background: var(--bg4); border-radius: 4px; }
+  .top-scroller::-webkit-scrollbar-thumb { background: var(--amber); border-radius: 4px; opacity: 0.7; }
+  .top-scroller-inner {
+    height: 1px;
+  }
+  .dyn-table-wrap {
+    overflow-x: auto;
+    border-radius: 0 0 8px 8px;
+    border: 1px solid var(--border);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .dyn-table-wrap::-webkit-scrollbar { height: 6px; }
+  .dyn-table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .dyn-table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .dyn-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+  }
+  .dyn-table th {
+    background: var(--bg3);
+    color: var(--muted);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid rgba(255,255,255,0.03);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .dyn-table th:first-child  { position: sticky; left: 0; z-index: 3; background: var(--bg3); }
+  .dyn-table th.col-sticky-2 { position: sticky; z-index: 3; background: var(--bg3); border-right: 2px solid rgba(245,158,11,0.3); }
+  .dyn-table td {
+    padding: 0.5rem 0.9rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    border-right: 1px solid rgba(255,255,255,0.02);
+    color: var(--text2);
+    white-space: nowrap;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.15s;
+  }
+  .dyn-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--bg2);
+    z-index: 1;
+    color: var(--text);
+    font-weight: 500;
+    border-right: 1px solid var(--border);
+  }
+  .dyn-table td.col-sticky-2 {
+    position: sticky;
+    background: var(--bg2);
+    z-index: 1;
+    color: var(--text);
+    font-weight: 500;
+    border-right: 2px solid rgba(245,158,11,0.3);
+  }
+  .dyn-table tr:hover td               { background: rgba(245,158,11,0.04); color: var(--text); }
+  .dyn-table tr:hover td:first-child   { background: rgba(245,158,11,0.06); }
+  .dyn-table tr:hover td.col-sticky-2  { background: rgba(245,158,11,0.06); }
+
+  /* Error value coloring */
+  .err-pos  { color: #F87171 !important; }
+  .err-neg  { color: #60A5FA !important; }
+  .err-zero { color: #34D399 !important; }
+
+  /* ===== DEVELOPER CREDIT BANNER ===== */
+  .dev-credit {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 500;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(90deg, #080A0E 0%, rgba(245,158,11,0.08) 50%, #080A0E 100%);
+    border-bottom: 1px solid rgba(245,158,11,0.15);
+    overflow: hidden;
+  }
+  .dev-credit::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.06) 30%, rgba(252,211,77,0.1) 50%, rgba(245,158,11,0.06) 70%, transparent 100%);
+    animation: creditShimmer 4s ease-in-out infinite;
+  }
+  @keyframes creditShimmer {
+    0%, 100% { opacity: 0.3; transform: translateX(-30%); }
+    50% { opacity: 1; transform: translateX(30%); }
+  }
+  .dev-credit-text {
+    position: relative;
+    z-index: 1;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #D4A017, #FCD34D, #F59E0B, #FCD34D, #D4A017);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: creditGradient 3s linear infinite, creditGlow 2s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 8px rgba(245,158,11,0.3));
+  }
+  @keyframes creditGradient {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes creditGlow {
+    0% { filter: drop-shadow(0 0 4px rgba(245,158,11,0.2)); }
+    100% { filter: drop-shadow(0 0 12px rgba(245,158,11,0.5)); }
+  }
+  .dev-credit-star {
+    position: relative;
+    z-index: 1;
+    color: var(--amber);
+    font-size: 0.5rem;
+    margin: 0 0.6rem;
+    animation: starSpin 6s linear infinite;
+    opacity: 0.7;
+  }
+  @keyframes starSpin {
+    0% { transform: rotate(0deg) scale(1); opacity: 0.5; }
+    50% { transform: rotate(180deg) scale(1.3); opacity: 1; }
+    100% { transform: rotate(360deg) scale(1); opacity: 0.5; }
+  }
+
+  /* Adjust header and app for credit banner */
+  header { top: 28px; }
+  .app   { padding-top: 92px; }
+
+  /* ===== PROGRESS BUTTON IN DETAIL HEADER ===== */
+  .progress-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.15));
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 8px;
+    padding: 0.35rem 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .progress-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(245,158,11,0.15), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  .progress-btn:hover::before { transform: translateX(100%); }
+  .progress-btn:hover {
+    border-color: var(--amber);
+    box-shadow: 0 0 20px rgba(245,158,11,0.15), 0 0 40px rgba(245,158,11,0.05);
+    transform: translateY(-1px);
+  }
+  .progress-btn-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--amber);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .progress-btn-icon::after {
+    content: '';
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: var(--amber);
+    border-right-color: var(--amber);
+    animation: progressSpin 2s linear infinite;
+  }
+  @keyframes progressSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .progress-btn-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .progress-btn-pct {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--amber2);
+    font-weight: 600;
+    margin-left: 0.2rem;
+  }
+
+  /* ===== PROGRESS FULL-SCREEN PAGE ===== */
+  #screen-progress {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 250;
+    background: var(--bg);
+    transform: translateX(100%);
+    transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-top: 28px;
+  }
+  #screen-progress.visible { transform: translateX(0); }
+
+  .progress-header {
+    height: 64px;
+    background: rgba(8,10,14,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(245,158,11,0.15);
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+  .progress-page-title {
+    font-family: var(--cond);
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text);
+  }
+  .progress-page-title span { color: var(--amber); }
+  .progress-page-subtitle {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .progress-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .progress-body::-webkit-scrollbar { width: 4px; }
+  .progress-body::-webkit-scrollbar-track { background: transparent; }
+  .progress-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Progress top row: donut + KPIs */
+  .progress-top-row {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  /* Donut chart container */
+  .donut-container {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    flex-shrink: 0;
+  }
+  .donut-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .donut-track {
+    fill: none;
+    stroke: var(--bg4);
+    stroke-width: 18;
+  }
+  .donut-fill {
+    fill: none;
+    stroke: var(--amber);
+    stroke-width: 18;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
+    filter: drop-shadow(0 0 6px rgba(245,158,11,0.4));
+  }
+  .donut-fill-green {
+    fill: none;
+    stroke: var(--green);
+    stroke-width: 18;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
+    filter: drop-shadow(0 0 6px rgba(16,185,129,0.4));
+  }
+  .donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .donut-pct {
+    font-family: var(--mono);
+    font-size: 3.2rem;
+    font-weight: 700;
+    color: var(--amber);
+    line-height: 1;
+  }
+  .donut-pct-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 0.3rem;
+  }
+
+  /* Progress KPI cards */
+  .progress-kpis {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    flex: 1;
+    min-width: 240px;
+  }
+  .progress-kpi {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-kpi::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .progress-kpi.pk-amber::after  { background: linear-gradient(90deg, var(--amber), transparent); }
+  .progress-kpi.pk-green::after  { background: linear-gradient(90deg, var(--green), transparent); }
+  .progress-kpi.pk-red::after    { background: linear-gradient(90deg, var(--red), transparent); }
+  .progress-kpi.pk-blue::after   { background: linear-gradient(90deg, var(--blue), transparent); }
+  .pk-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  .pk-value {
+    font-family: var(--mono);
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .pk-sub {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    margin-top: 0.35rem;
+  }
+  .pk-amber .pk-value { color: var(--amber); }
+  .pk-green .pk-value { color: var(--green); }
+  .pk-red   .pk-value { color: var(--red); }
+  .pk-blue  .pk-value { color: var(--blue); }
+
+  /* Section list */
+  .progress-section-title {
+    font-family: var(--cond);
+    font-size: 1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--amber);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .progress-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(245,158,11,0.3), transparent);
+  }
+
+  .progress-filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .pf-tab {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.4rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .pf-tab.pf-active-all     { border-color: var(--blue);  color: var(--blue);  background: rgba(59,130,246,0.1); }
+  .pf-tab.pf-active-done    { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); }
+  .pf-tab.pf-active-pending { border-color: var(--red);   color: var(--red);   background: rgba(239,68,68,0.1); }
+
+  .progress-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 0.7rem;
+  }
+  .progress-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1.2rem;
+    transition: all 0.25s ease;
+    animation: fadeUp 0.4s ease forwards;
+    opacity: 0;
+  }
+  .progress-item:hover {
+    border-color: rgba(245,158,11,0.2);
+    background: rgba(245,158,11,0.02);
+  }
+  .progress-item-status {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .pi-done   .progress-item-status { background: var(--green); box-shadow: 0 0 8px rgba(16,185,129,0.5); }
+  .pi-partial .progress-item-status { background: var(--amber); box-shadow: 0 0 8px rgba(245,158,11,0.5); }
+  .pi-pending .progress-item-status { background: var(--red); opacity: 0.5; }
+  .progress-item-name {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    flex: 1;
+  }
+  .pi-pending .progress-item-name { color: var(--text2); opacity: 0.7; }
+  .progress-item-badge {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .pi-done .progress-item-badge {
+    background: rgba(16,185,129,0.12);
+    color: #34D399;
+    border: 1px solid rgba(16,185,129,0.2);
+  }
+  .pi-partial .progress-item-badge {
+    background: rgba(245,158,11,0.12);
+    color: var(--amber2);
+    border: 1px solid rgba(245,158,11,0.2);
+  }
+  .pi-pending .progress-item-badge {
+    background: rgba(239,68,68,0.08);
+    color: #F87171;
+    border: 1px solid rgba(239,68,68,0.15);
+    opacity: 0.7;
+  }
+  .pf-tab.pf-active-partial { border-color: var(--amber); color: var(--amber); background: rgba(245,158,11,0.1); }
+  .pf-tab.pf-active-complete { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); }
+  .pf-tab.pf-active-completed { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); }
+  .pf-tab.pf-active-in-progress { border-color: var(--amber); color: var(--amber); background: rgba(245,158,11,0.1); }
+
+  /* Download PDF button */
+  .download-pdf-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.2));
+    border: 1px solid rgba(16,185,129,0.35);
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .download-pdf-btn:hover {
+    border-color: var(--green);
+    background: rgba(16,185,129,0.2);
+    box-shadow: 0 0 16px rgba(16,185,129,0.15);
+    transform: translateY(-1px);
+  }
+  .download-pdf-btn-icon {
+    font-size: 1rem;
+  }
+  .download-pdf-btn-label {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 768px) {
+    .progress-top-row { flex-direction: column; align-items: center; }
+    .progress-kpis { min-width: unset; width: 100%; }
+    .progress-list { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="dev-credit">
+  <span class="dev-credit-star">&#10038;</span>
+  <span class="dev-credit-text">Designed &amp; Developed by Viswanadh Malladi</span>
+  <span class="dev-credit-star">&#10038;</span>
+</div>
+
+<header>
+  <div class="header-left" id="home-btn" style="cursor:pointer;" title="Back to Home">
+    <div class="logo-mark"></div>
+    <div>
+      <div class="header-title">KAVACH <span>RFID</span></div>
+      <div class="header-subtitle">Tag Verification System — HBL Engineering</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="progress-btn" id="header-progress-btn" title="View Section Progress" style="margin-right:0.5rem">
+      <div class="progress-btn-icon"></div>
+      <span class="progress-btn-label">Progress</span>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      <span id="system-status">AWAITING DATA</span>
+    </div>
+    <div class="file-count" id="file-count-badge">0 FILES</div>
+  </div>
+</header>
+
+<div class="app">
+  <div class="multi-bar" id="multi-bar">
+    <div class="multi-bar-label"><span id="sel-count">0</span> sections selected</div>
+    <button class="multi-bar-btn primary" id="view-multi-btn">View Combined →</button>
+    <button class="multi-bar-btn ghost" id="clear-sel-btn">Clear</button>
+  </div>
+  <!-- SEARCH SCREEN -->
+  <div id="screen-search">
+    <div class="search-hero">
+      <div class="hero-label">HBL Engineering · Kavach Phase-I</div>
+      <div class="hero-title">RFID Tag<br/><em>Verification</em></div>
+      <div class="hero-desc">Load Excel files · Search sections · Analyse tag data</div>
+    </div>
+
+    <!-- Upload zone -->
+    <label class="upload-zone" id="upload-zone" for="file-input">
+      <div class="upload-icon">📂</div>
+      <div class="upload-text">
+        <strong>Click to load Excel files</strong> or drag & drop here<br/>
+        <span style="opacity:0.6">Supports all Kavach RFID verification report files</span>
+      </div>
+    </label>
+    <input type="file" id="file-input" multiple accept=".xlsx,.xls" style="display:none"/>
+
+    <div class="loading-bar" id="loading-bar">
+      <div class="loading-fill" id="loading-fill"></div>
+    </div>
+    <div class="loading-text" id="loading-text">LOADING FILES...</div>
+
+    <div class="file-chips" id="file-chips" style="display:none"></div>
+
+    <!-- Search box -->
+    <div class="search-container">
+      <span class="search-icon">⌕</span>
+      <input type="text" class="search-box" id="search-box"
+             placeholder="Search section name... e.g. BORKHEDI, SINDI, TULJAPUR"
+             autocomplete="off" disabled/>
+      <span class="search-shortcut">ENTER ↵</span>
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-grid" id="results-grid"></div>
+  </div>
+
+  <!-- DETAIL SCREEN -->
+  <div id="screen-detail">
+    <div class="detail-header">
+      <button class="back-btn" id="back-btn">← Back to Search</button>
+      <div class="progress-btn" id="open-progress-btn" title="View Section Progress">
+        <div class="progress-btn-icon"></div>
+        <span class="progress-btn-label">Progress</span>
+        <span class="progress-btn-pct" id="progress-btn-pct">—</span>
+      </div>
+      <div class="detail-title-block">
+        <div class="detail-section-name" id="detail-title">—</div>
+        <div class="detail-meta" id="detail-meta">—</div>
+      </div>
+      <div class="page-tabs">
+        <button class="page-tab active" data-page="0" id="tab-0">01 · Tag Data</button>
+        <button class="page-tab" data-page="1" id="tab-1">02 · Placement</button>
+      </div>
+    </div>
+
+    <div class="pages-container">
+      <!-- Page 1: Tag data -->
+      <div class="page page-visible" id="page-0">
+        <div class="page-grid" id="kpi-grid"></div>
+        <div class="section-title" id="sheet-section-label">Tag Records</div>
+        <div class="sheet-tabs" id="sheet-tabs"></div>
+        <div class="filter-bar" id="filter-bar" style="display:none">
+          <button class="filter-btn active-all" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="matched">Matched</button>
+          <button class="filter-btn" data-filter="missed">Missed</button>
+          <button class="filter-btn" data-filter="mismatch">Mismatch</button>
+        </div>
+        <div id="tag-table-wrap"></div>
+      </div>
+
+      <!-- Page 2: Placement -->
+      <div class="page page-hidden-right" id="page-1">
+        <div class="page-grid" id="placement-kpi"></div>
+        <div class="section-title">Placement Data</div>
+        <div id="placement-timeline"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS SCREEN -->
+  <div id="screen-progress">
+    <div class="progress-header">
+      <button class="back-btn" id="progress-back-btn">← Back</button>
+      <div>
+        <div class="progress-page-title">Section <span>Progress</span></div>
+        <div class="progress-page-subtitle">Master Verification Tracker</div>
+      </div>
+      <div class="download-pdf-btn" id="download-progress-pdf" title="Download Progress Report as PDF">
+        <span class="download-pdf-btn-icon">&#128196;</span>
+        <span class="download-pdf-btn-label">Download PDF</span>
+      </div>
+    </div>
+    <div class="progress-body" id="progress-body"></div>
+  </div>
+</div>
+
+<script>
+// ── Wait for XLSX library ──────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  if (typeof XLSX === 'undefined') {
+    var s = document.createElement('script');
+    s.src = 'xlsx.full.min.js';
+    s.onload = initApp;
+    s.onerror = function() {
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:monospace;color:#F59E0B;background:#080A0E;flex-direction:column;gap:1rem"><div style="font-size:1.5rem">LOAD ERROR</div><div style="color:#9CA3AF">XLSX library failed to load. Check internet connection.</div></div>';
+    };
+    document.head.appendChild(s);
+  } else {
+    initApp();
+  }
+});
+
+function initApp() {
+
+// ── DATA STORE ────────────────────────────────────────────────────────────
+var allData          = [];
+var currentDetail    = null;
+var currentFilter    = 'all';
+var currentPage      = 0;
+var currentSheet     = 0;
+var selectedSections = [];  // indices into allData
+
+// ── DOM REFS ──────────────────────────────────────────────────────────────
+var uploadZone  = document.getElementById('upload-zone');
+var fileInput   = document.getElementById('file-input');
+var loadingBar  = document.getElementById('loading-bar');
+var loadingFill = document.getElementById('loading-fill');
+var loadingText = document.getElementById('loading-text');
+var fileChips   = document.getElementById('file-chips');
+var searchBox   = document.getElementById('search-box');
+var statusEl    = document.getElementById('system-status');
+var fileCountEl = document.getElementById('file-count-badge');
+
+// ── FILE LOADING ──────────────────────────────────────────────────────────
+uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', function()  { uploadZone.classList.remove('drag-over'); });
+uploadZone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change', function() {
+  console.log('Files selected:', fileInput.files.length);
+  handleFiles(Array.from(fileInput.files));
+});
+
+function handleFiles(files) {
+  console.log('handleFiles:', files.length);
+  var xlsxFiles = files.filter(function(f) { return f.name.match(/\.xlsx?$/i); });
+  console.log('xlsx files:', xlsxFiles.map(function(f){return f.name;}));
+  if (!xlsxFiles.length) { alert('No .xlsx files selected.'); return; }
+
+  loadingBar.style.display = 'block';
+  loadingText.style.display = 'block';
+  loadingFill.style.width = '0%';
+  allData = [];
+
+  var idx = 0;
+  function loadNext() {
+    if (idx >= xlsxFiles.length) {
+      loadingFill.style.width = '100%';
+      setTimeout(function() {
+        loadingBar.style.display = 'none';
+        loadingText.style.display = 'none';
+        searchBox.disabled = false;
+        searchBox.focus();
+        statusEl.textContent = 'ONLINE — ' + allData.length + ' SECTIONS';
+        fileCountEl.textContent = allData.length + ' FILES';
+        fileChips.style.display = 'flex';
+        fileChips.innerHTML = allData.map(function(d) {
+          return '<div class="file-chip" title="' + d.filename + '">' + d.section + '</div>';
+        }).join('');
+        doSearch('');
+        window.__kavachAllData = allData;
+      }, 300);
+      return;
+    }
+    var file = xlsxFiles[idx];
+    loadingText.textContent = 'LOADING ' + (idx+1) + '/' + xlsxFiles.length + ': ' + file.name.substring(0,40) + '...';
+    loadingFill.style.width = ((idx / xlsxFiles.length) * 95) + '%';
+    loadFileAsync(file, function() {
+      idx++;
+      loadNext();
+    });
+  }
+  loadNext();
+}
+
+function loadFileAsync(file, callback) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, { type: 'array' });
+
+      console.log('Loading:', file.name, '| Sheets:', wb.SheetNames);
+
+      var fname   = file.name.replace(/\.xlsx?$/i, '');
+      var parts   = fname.split('_');
+      var locoInfo= parts[0] || '';
+      var section = parts.slice(1).join('_').trim() || fname;
+      var locoDir = locoInfo.toLowerCase().indexOf('reverse') !== -1 ? 'Reverse' : 'Nominal';
+      var locoIdM = locoInfo.match(/\(([^)]+)\)/);
+      var locoId  = locoIdM ? locoIdM[1] : 'Unknown';
+      var sheet1  = parseSheetByName(wb, 'Tag Data Verification',      0);
+      var sheet2  = parseSheetByName(wb, 'Tag Placement Verification', 1);
+      console.log('Loaded:', file.name, '| S1:', sheet1.rows.length, 'rows | S2:', sheet2.rows.length, 'rows');
+      allData.push({ filename: file.name, locoDir: locoDir, locoId: locoId, section: section, sheet1: sheet1, sheet2: sheet2 });
+    } catch(err) {
+      console.error('Error parsing', file.name, err);
+    }
+    callback();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseSheetByName(wb, exactName, fallbackIdx) {
+  // 1. Try exact name (case-insensitive)
+  var sheetName = null;
+  for (var i = 0; i < wb.SheetNames.length; i++) {
+    if (wb.SheetNames[i].trim().toLowerCase() === exactName.trim().toLowerCase()) {
+      sheetName = wb.SheetNames[i];
+      break;
+    }
+  }
+  // 2. Fallback to index
+  if (!sheetName) {
+    if (fallbackIdx < wb.SheetNames.length) {
+      sheetName = wb.SheetNames[fallbackIdx];
+      console.warn('Sheet "' + exactName + '" not found — using fallback "' + sheetName + '"');
+    } else {
+      console.warn('Sheet "' + exactName + '" not found and no fallback available');
+      return { headers: [], rows: [] };
+    }
+  }
+  console.log('Parsing sheet "' + sheetName + '"');
+  return parseSheetRaw(wb, sheetName);
+}
+
+function parseSheetRaw(wb, sheetName) {
+  var ws  = wb.Sheets[sheetName];
+  if (!ws) return { headers: [], rows: [] };
+  var raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+
+  // Find header row — scan up to 15 rows (5-row title block + buffer)
+  var keywords = [
+    'loco direction','tagid','tag-id','abs location',
+    'distance from previous','error in tag','remark on placement',
+    'section name','corrective action','type of tag',
+    'remark on tag','tin-id','kind of tag','timestamp','page-x'
+  ];
+  var headerRow = -1;
+  for (var i = 0; i < Math.min(raw.length, 15); i++) {
+    var rowStr = raw[i].map(function(c){ return String(c); }).join(' ').toLowerCase();
+    for (var k = 0; k < keywords.length; k++) {
+      if (rowStr.indexOf(keywords[k]) !== -1) {
+        var nonEmpty = raw[i].filter(function(c){ return String(c).trim() !== ''; }).length;
+        if (nonEmpty >= 3) { headerRow = i; break; }
+      }
+    }
+    if (headerRow !== -1) break;
+  }
+  if (headerRow === -1) {
+    console.warn('Header not found in sheet "' + sheetName + '"');
+    return { headers: [], rows: [] };
+  }
+
+  var headers = raw[headerRow].map(function(h) {
+    return String(h).replace(/[\r\n]+/g, ' ').replace(/[ \t]+/g, ' ').trim();
+  });
+  console.log('Sheet "' + sheetName + '" headerRow:' + headerRow + ' cols:' + headers.filter(function(h){return h;}).length);
+
+  var rows = raw.slice(headerRow + 1)
+    .filter(function(r){ return r.some(function(c){ return String(c).trim() !== ''; }); })
+    .map(function(r) {
+      var obj = {};
+      headers.forEach(function(h, i) {
+        if (h) obj[h] = String(r[i] !== undefined ? r[i] : '').trim();
+      });
+      return obj;
+    });
+  return { headers: headers, rows: rows };
+}
+
+// ── SEARCH ────────────────────────────────────────────────────────────────
+var suggestTimeout;
+searchBox.addEventListener('input', function() {
+  clearTimeout(suggestTimeout);
+  suggestTimeout = setTimeout(function() {
+    var q = searchBox.value.trim();
+    showSuggestions(q);
+    doSearch(q);
+  }, 150);
+});
+searchBox.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter')  { hideSuggestions(); doSearch(searchBox.value.trim()); }
+  if (e.key === 'Escape') { hideSuggestions(); }
+});
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.search-container')) hideSuggestions();
+});
+
+function showSuggestions(q) {
+  var sugEl = document.getElementById('suggestions');
+  if (!q || !allData.length) { hideSuggestions(); return; }
+  var matches = allData.filter(function(d){ return d.section.toLowerCase().indexOf(q.toLowerCase()) !== -1; }).slice(0,6);
+  if (!matches.length) { hideSuggestions(); return; }
+  sugEl.innerHTML = matches.map(function(d) {
+    return '<div class="suggestion-item" data-section="' + d.section + '"><span>⊛</span><span>' + d.section + '</span><span class="suggestion-tag">' + d.locoDir + '</span></div>';
+  }).join('');
+  sugEl.querySelectorAll('.suggestion-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+      searchBox.value = el.dataset.section;
+      hideSuggestions();
+      doSearch(el.dataset.section);
+    });
+  });
+  sugEl.classList.add('visible');
+}
+function hideSuggestions() { document.getElementById('suggestions').classList.remove('visible'); }
+
+function doSearch(q) {
+  var grid   = document.getElementById('results-grid');
+  var screen = document.getElementById('screen-search');
+  var results = q ? allData.filter(function(d){ return d.section.toLowerCase().indexOf(q.toLowerCase()) !== -1; }) : allData;
+
+  if (!results.length && allData.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">NO SECTIONS FOUND FOR "' + q + '"</div>';
+    screen.classList.add('has-results'); return;
+  }
+  if (!results.length) {
+    grid.innerHTML = '';
+    screen.classList.remove('has-results'); return;
+  }
+
+  screen.classList.add('has-results');
+  grid.innerHTML = results.map(function(d, i){ return buildCard(d, i); }).join('');
+
+  // Wire events using closure to capture correct index
+  results.forEach(function(data, i) {
+    var card  = grid.querySelector('.result-card[data-idx="' + i + '"]');
+    if (!card) return;
+    var check = card.querySelector('.card-select-check');
+
+    if (check) {
+      check.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleSelection(data, card);
+      });
+    }
+
+    card.addEventListener('click', function(e) {
+      if (check && e.target === check) return;
+      openDetail(data);
+    });
+  });
+}
+
+function toggleSelection(d, card) {
+  var idx = selectedSections.indexOf(d);
+  if (idx === -1) {
+    selectedSections.push(d);
+    card.classList.add('selected');
+  } else {
+    selectedSections.splice(idx, 1);
+    card.classList.remove('selected');
+  }
+  updateMultiBar();
+}
+
+function updateMultiBar() {
+  var bar      = document.getElementById('multi-bar');
+  var countEl  = document.getElementById('sel-count');
+  countEl.textContent = selectedSections.length;
+  if (selectedSections.length >= 2) {
+    bar.classList.add('visible');
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+function clearSelections() {
+  selectedSections = [];
+  document.querySelectorAll('.result-card.selected').forEach(function(c){ c.classList.remove('selected'); });
+  document.getElementById('multi-bar').classList.remove('visible');
+}
+
+function getStats(d) {
+  var rows = d.sheet1.rows;
+  var remarkCol     = d.sheet1.headers.find(function(h){ return h.toLowerCase().indexOf('remark on tag') !== -1; });
+  var remarkMissCol = d.sheet1.headers.find(function(h){ return h.toLowerCase().indexOf('remarks on missing') !== -1; });
+  var matched=0, missed=0, mismatch=0;
+  rows.forEach(function(r) {
+    var a = (remarkCol     ? (r[remarkCol]     || '') : '').toLowerCase();
+    var b = (remarkMissCol ? (r[remarkMissCol] || '') : '').toLowerCase();
+    var c = a + ' ' + b;
+    if (c.indexOf('mismatch') !== -1)     mismatch++;
+    else if (c.indexOf('matched') !== -1) matched++;
+    else if (c.indexOf('missed')  !== -1) missed++;
+  });
+  return { total: rows.length, matched: matched, missed: missed, mismatch: mismatch };
+}
+
+function buildCard(d, i) {
+  var s   = getStats(d);
+  var pct = s.total ? Math.round((s.matched / s.total) * 100) : 0;
+  return '<div class="result-card" data-idx="' + i + '" style="animation-delay:' + (i*0.05) + 's">' +
+    '<div class="card-select-check" data-check="' + i + '">✓</div>' +
+    '<div class="card-header">' +
+      '<div class="card-section-name">' + d.section + '</div>' +
+      '<div class="card-loco-badge badge-' + d.locoDir.toLowerCase() + '">' + d.locoDir + '</div>' +
+    '</div>' +
+    '<div class="card-body">' +
+      '<div class="stat-row">' +
+        '<div class="stat-chip stat-green"><div class="stat-value">' + s.matched  + '</div><div class="stat-label">Matched</div></div>' +
+        '<div class="stat-chip stat-red"><div class="stat-value">'   + s.missed   + '</div><div class="stat-label">Missed</div></div>' +
+        '<div class="stat-chip stat-amber"><div class="stat-value">' + s.mismatch + '</div><div class="stat-label">Mismatch</div></div>' +
+        '<div class="stat-chip stat-blue"><div class="stat-value">'  + s.total    + '</div><div class="stat-label">Total</div></div>' +
+      '</div>' +
+      '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-bottom:0.4rem;letter-spacing:0.08em">' + pct + '% SUCCESS RATE</div>' +
+      '<div class="card-progress"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+    '</div>' +
+    '<div class="card-footer">' +
+      '<div class="card-loco-id">LOCO · ' + d.locoId + '</div>' +
+      '<div class="card-cta">VIEW DETAILS →</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── DETAIL VIEW ───────────────────────────────────────────────────────────
+function openMultiDetail(sections) {
+  // Build a synthetic combined detail object
+  var combined = {
+    section: sections.map(function(s){ return s.section; }).join(' + '),
+    locoDir: sections.map(function(s){ return s.locoDir; }).join(' / '),
+    locoId:  sections.map(function(s){ return s.locoId; }).join(', '),
+    filename: sections.length + ' sections combined',
+    isMulti:  true,
+    sections: sections,
+    // Merge sheet1 rows with section label prepended
+    sheet1: mergeSheets(sections, 'sheet1'),
+    sheet2: mergeSheets(sections, 'sheet2')
+  };
+  openDetail(combined);
+}
+
+function mergeSheets(sections, sheetKey) {
+  if (!sections.length) return { headers: [], rows: [] };
+  // Use headers from first valid section
+  var headers = [];
+  for (var i = 0; i < sections.length; i++) {
+    if (sections[i][sheetKey].headers.length) {
+      headers = sections[i][sheetKey].headers.slice();
+      break;
+    }
+  }
+  var allRows = [];
+  sections.forEach(function(sec) {
+    var rows = sec[sheetKey].rows;
+    if (!rows.length) return;
+    // Tag each row with section name for display
+    rows.forEach(function(r) {
+      var tagged = {};
+      headers.forEach(function(h){ tagged[h] = r[h] || ''; });
+      tagged['__section'] = sec.section;
+      allRows.push(tagged);
+    });
+  });
+  return { headers: headers, rows: allRows, isMulti: true, sections: sections };
+}
+
+function openDetail(d) {
+  currentDetail = d;
+  currentPage   = 0;
+  currentFilter = 'all';
+  currentSheet  = 0;
+  document.getElementById('detail-title').textContent = d.section;
+  document.getElementById('detail-meta').textContent  = d.locoDir + ' · Loco ' + d.locoId + ' · ' + d.filename;
+  renderSheetTabs(d);
+  renderPage0(d);
+  renderPage1(d);
+  switchPage(0);
+  document.getElementById('screen-detail').classList.add('visible');
+}
+
+function renderSheetTabs(d) {
+  var tabsEl = document.getElementById('sheet-tabs');
+  var sheets = [
+    { name: 'Tag Data Verification',       rows: d.sheet1.rows, sheetIdx: 0 },
+    { name: 'Tag Placement Verification',  rows: d.sheet2.rows, sheetIdx: 1 }
+  ];
+
+  tabsEl.innerHTML = sheets.map(function(s, i) {
+    var active = (i === currentSheet) ? ' active' : '';
+    return '<button class="sheet-tab' + active + '" data-sheet="' + i + '">' +
+      s.name + '<span class="tab-count">' + s.rows.length + '</span>' +
+    '</button>';
+  }).join('');
+
+  tabsEl.querySelectorAll('.sheet-tab').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      currentSheet  = parseInt(btn.dataset.sheet);
+      currentFilter = 'all';
+      // Update active state
+      tabsEl.querySelectorAll('.sheet-tab').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.sheet === btn.dataset.sheet);
+      });
+      renderActiveSheet(d);
+    });
+  });
+
+  renderActiveSheet(d);
+}
+
+function renderActiveSheet(d) {
+  var filterBar = document.getElementById('filter-bar');
+  var labelEl   = document.getElementById('sheet-section-label');
+
+  if (currentSheet === 0) {
+    // Sheet 1 — Tag Data: show filter bar
+    filterBar.style.display = 'flex';
+    labelEl.textContent = 'Tag Data Verification';
+    // Reset filter buttons
+    document.querySelectorAll('.filter-btn').forEach(function(b) {
+      var f = b.dataset.filter;
+      b.className = 'filter-btn' + (f === 'all' ? ' active-all' : '');
+    });
+    currentFilter = 'all';
+    renderTagTable(d, 'all');
+  } else {
+    // Sheet 2 — Placement: render into tag-table-wrap (same page as sheet tabs)
+    filterBar.style.display = 'none';
+    labelEl.textContent = 'Tag Placement Verification';
+    renderPlacementTable(d, 'tag-table-wrap');
+  }
+}
+
+document.getElementById('home-btn').addEventListener('click', function() {
+  document.getElementById('screen-detail').classList.remove('visible');
+  searchBox.value = '';
+  doSearch('');
+  document.getElementById('screen-search').classList.remove('has-results');
+});
+
+document.getElementById('back-btn').addEventListener('click', function() {
+  document.getElementById('screen-detail').classList.remove('visible');
+});
+
+var clearBtn = document.getElementById('clear-sel-btn');
+var viewBtn  = document.getElementById('view-multi-btn');
+if (clearBtn) clearBtn.addEventListener('click', clearSelections);
+if (viewBtn)  viewBtn.addEventListener('click', function() {
+  if (selectedSections.length < 2) return;
+  openMultiDetail(selectedSections);
+});
+
+document.querySelectorAll('.page-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() { switchPage(parseInt(tab.dataset.page)); });
+});
+
+function switchPage(idx) {
+  document.querySelectorAll('.page').forEach(function(p, i) {
+    p.classList.remove('page-visible','page-hidden-left','page-hidden-right');
+    if (i === idx)      p.classList.add('page-visible');
+    else if (i < idx)   p.classList.add('page-hidden-left');
+    else                p.classList.add('page-hidden-right');
+  });
+  document.querySelectorAll('.page-tab').forEach(function(t, i) {
+    t.classList.toggle('active', i === idx);
+  });
+  currentPage = idx;
+  if (idx === 1) {
+    setTimeout(function() {
+      document.querySelectorAll('.timeline-row').forEach(function(row, i) {
+        setTimeout(function(){ row.classList.add('visible'); }, i * 18);
+      });
+    }, 100);
+  }
+}
+
+// ── PAGE 1: TAG DATA ──────────────────────────────────────────────────────
+function renderPage0(d) {
+  var s   = getStats(d);
+  var pct = s.total ? Math.round((s.matched / s.total) * 100) : 0;
+  document.getElementById('kpi-grid').innerHTML =
+    '<div class="kpi-card kpi-blue"><div class="kpi-label">Total Tags</div><div class="kpi-value">' + s.total + '</div><div class="kpi-sub">in this section</div></div>' +
+    '<div class="kpi-card kpi-green"><div class="kpi-label">Matched</div><div class="kpi-value">' + s.matched + '</div><div class="kpi-sub">' + pct + '% success rate</div></div>' +
+    '<div class="kpi-card kpi-red"><div class="kpi-label">Missed</div><div class="kpi-value">' + s.missed + '</div><div class="kpi-sub">loco did not read</div></div>' +
+    '<div class="kpi-card kpi-amber"><div class="kpi-label">Mismatch</div><div class="kpi-value">' + s.mismatch + '</div><div class="kpi-sub">data discrepancy</div></div>';
+
+  // Wire up filter buttons
+  document.querySelectorAll('.filter-btn').forEach(function(btn) {
+    var f = btn.dataset.filter;
+    btn.onclick = function() {
+      currentFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(function(b) {
+        var bf = b.dataset.filter;
+        b.className = 'filter-btn' + (bf === f ? (' active-' + (bf==='all'?'all':bf==='matched'?'match':bf==='missed'?'missed':'mis')) : '');
+      });
+      renderTagTable(d, f);
+    };
+  });
+  // Table rendered by renderSheetTabs -> renderActiveSheet
+}
+
+function getStatus(r, remarkCol, remarkMissCol) {
+  var a = (remarkCol     ? (r[remarkCol]     || '') : '').toLowerCase();
+  var b = (remarkMissCol ? (r[remarkMissCol] || '') : '').toLowerCase();
+  var c = a + ' ' + b;
+  if (c.indexOf('mismatch') !== -1) return 'mismatch';
+  if (c.indexOf('missed')   !== -1) return 'missed';
+  if (c.indexOf('matched')  !== -1) return 'matched';
+  return 'unknown';
+}
+
+function renderTagTable(d, filter) {
+  var wrap = document.getElementById('tag-table-wrap');
+  var rows = d.sheet1.rows;
+  var h    = d.sheet1.headers.filter(function(c){ return c && c.trim() !== ''; });
+
+  // Identify status columns for filtering
+  var remarkCol     = h.find(function(c){ return c.toLowerCase().indexOf('remark on tag') !== -1; });
+  var remarkMissCol = h.find(function(c){ return c.toLowerCase().indexOf('remarks on missing') !== -1; });
+
+  // Filter rows
+  var filtered = rows;
+  if (filter === 'matched')  filtered = rows.filter(function(r){ return (r[remarkCol]||'').toLowerCase().indexOf('matched') !== -1; });
+  if (filter === 'missed')   filtered = rows.filter(function(r){
+    return (r[remarkCol]||'').toLowerCase().indexOf('missed') !== -1 ||
+           (r[remarkMissCol]||'').toLowerCase().indexOf('missed') !== -1;
+  });
+  if (filter === 'mismatch') filtered = rows.filter(function(r){
+    return (r[remarkCol]||'').toLowerCase().indexOf('mismatch') !== -1 ||
+           (r[remarkMissCol]||'').toLowerCase().indexOf('mismatch') !== -1;
+  });
+
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="no-data"><div class="no-data-icon">◈</div><div class="no-data-text">No records for this filter</div></div>';
+    return;
+  }
+
+  // Multi-section mode: group rows by __section
+  var isMulti = d.sheet1 && d.sheet1.isMulti;
+
+  // Status columns get badge treatment
+  var statusCols = {
+    'remark on tag data': true,
+    'remarks on missing': true,
+    'remark on placement': true
+  };
+
+  function cellClass(col, val) {
+    var cl = col.toLowerCase();
+    if (statusCols[cl] || cl.indexOf('remark') !== -1) {
+      var v = val.toLowerCase();
+      if (v.indexOf('matched') !== -1)   return 'status-badge status-matched';
+      if (v.indexOf('missed') !== -1)    return 'status-badge status-missed';
+      if (v.indexOf('mismatch') !== -1)  return 'status-badge status-mismatch';
+      if (v.indexOf('incorrect') !== -1) return 'status-badge status-missed';
+      if (v.indexOf('correct') !== -1)   return 'status-badge status-matched';
+    }
+    return '';
+  }
+
+  var thead = '<tr>' + h.map(function(col) {
+    return '<th title="' + col + '">' + col + '</th>';
+  }).join('') + '</tr>';
+
+  var tbody = filtered.map(function(r) {
+    return '<tr>' + h.map(function(col) {
+      var val = r[col] || '';
+      var cls = cellClass(col, val);
+      if (cls) return '<td><span class="' + cls + '">' + (val||'—') + '</span></td>';
+      return '<td title="' + val + '">' + (val||'—') + '</td>';
+    }).join('') + '</tr>';
+  }).join('');
+
+  if (!isMulti) {
+    wrap.innerHTML = '<div class="dyn-table-wrap"><table class="dyn-table"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table></div>';
+    attachTopScrollers('tag-table-wrap');
+    applyFrozenColumnsInContainer('tag-table-wrap');
+  } else {
+    // Group by section and render with headings
+    var sections = d.sheet1.sections || [];
+    var secNames = sections.map(function(s){ return s.section; });
+    var html = '';
+    secNames.forEach(function(secName) {
+      var secRows = filtered.filter(function(r){ return r['__section'] === secName; });
+      if (!secRows.length) return;
+      var secTbody = secRows.map(function(r) {
+        return '<tr>' + h.map(function(col) {
+          var val = r[col] || '';
+          var cls = cellClass(col, val);
+          if (cls) return '<td><span class="' + cls + '">' + (val||'—') + '</span></td>';
+          return '<td title="' + val + '">' + (val||'—') + '</td>';
+        }).join('') + '</tr>';
+      }).join('');
+      html += '<div class="section-heading">' + secName + ' <span style="font-size:0.65rem;opacity:0.7;margin-left:auto">(' + secRows.length + ' records)</span></div>';
+      html += '<div class="dyn-table-wrap" style="margin-bottom:1.5rem"><table class="dyn-table"><thead>' + thead + '</thead><tbody>' + secTbody + '</tbody></table></div>';
+    });
+    wrap.innerHTML = html || '<div class="no-data"><div class="no-data-icon">◈</div><div class="no-data-text">No records</div></div>';
+    if (html) attachTopScrollers('tag-table-wrap');
+  }
+}
+
+// ── PAGE 2: PLACEMENT ─────────────────────────────────────────────────────
+function renderPage1(d) {
+  // KPIs only — table rendered by renderSheetTabs when tab is active
+  var rows = d.sheet2.rows;
+  var h    = d.sheet2.headers.filter(function(c){ return c && c.trim() !== ''; });
+  var find = function() {
+    var kws = Array.prototype.slice.call(arguments);
+    return h.find(function(c){ return kws.some(function(kw){ return c.toLowerCase().indexOf(kw.toLowerCase()) !== -1; }); });
+  };
+  var remarkCol = find('Remark on placement','Correct/Incorrect');
+  var correct=0, incorrect=0, missed=0;
+  rows.forEach(function(r) {
+    var rem = (remarkCol ? (r[remarkCol]||'') : '').toLowerCase();
+    if (rem.indexOf('missed') !== -1) missed++;
+    else if (rem.indexOf('incorrect') !== -1) incorrect++;
+    else if (rem.indexOf('correct') !== -1) correct++;
+  });
+  document.getElementById('placement-kpi').innerHTML =
+    '<div class="kpi-card kpi-blue"><div class="kpi-label">Total Placements</div><div class="kpi-value">' + rows.length + '</div><div class="kpi-sub">tags analysed</div></div>' +
+    '<div class="kpi-card kpi-green"><div class="kpi-label">Correct</div><div class="kpi-value">' + correct + '</div><div class="kpi-sub">within tolerance</div></div>' +
+    '<div class="kpi-card kpi-red"><div class="kpi-label">Incorrect</div><div class="kpi-value">' + incorrect + '</div><div class="kpi-sub">out of tolerance</div></div>' +
+    '<div class="kpi-card kpi-amber"><div class="kpi-label">Missed</div><div class="kpi-value">' + missed + '</div><div class="kpi-sub">not read by loco</div></div>';
+
+  // Render the full placement table into page-2 with scroller + frozen columns
+  renderPlacementTable(d, 'placement-timeline');
+}
+
+function renderPlacementTable(d, targetId) {
+  // targetId: 'tag-table-wrap' when called from sheet tabs (page-0)
+  //           'placement-timeline' when called from page-1 KPI tab
+  var el   = document.getElementById(targetId || 'tag-table-wrap');
+  var rows = d.sheet2.rows;
+  var h    = d.sheet2.headers.filter(function(c){ return c && c.trim() !== ''; });
+  console.log('renderPlacementTable — sheet2 rows:', rows.length, 'headers:', h.length, 'target:', targetId || 'tag-table-wrap');
+
+  if (!rows.length) {
+    el.innerHTML =
+      '<div class="no-data"><div class="no-data-icon">◈</div>' +
+      '<div class="no-data-text">No data in Tag Placement Verification sheet</div>' +
+      '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin-top:0.5rem">' +
+      'Check F12 console — sheet2 rows should be > 0</div></div>';
+    return;
+  }
+
+  var find = function() {
+    var kws = Array.prototype.slice.call(arguments);
+    return h.find(function(c){ return kws.some(function(kw){ return c.toLowerCase().indexOf(kw.toLowerCase()) !== -1; }); });
+  };
+  var errorCol  = find('Error in Tag Placement','error in tag');
+  var remarkCol = find('Remark on placement','Correct/Incorrect');
+
+  function cellStyle(col, val) {
+    var cl = col.toLowerCase();
+    // Remark / placement result column
+    if (cl.indexOf('remark on placement') !== -1 || cl.indexOf('correct/incorrect') !== -1) {
+      var v = val.toLowerCase();
+      if (v === 'correct')                    return 'badge:matched';
+      if (v === 'incorrect')                  return 'badge:missed';
+      if (v.indexOf('loco missed') !== -1)    return 'badge:missed';
+      if (v.indexOf('missed') !== -1)         return 'badge:mismatch';
+      if (v.indexOf('interchange') !== -1)    return 'badge:mismatch';
+    }
+    // Error in placement — signed number
+    if (cl.indexOf('error in tag placement') !== -1) {
+      var n = parseFloat(val);
+      if (!isNaN(n)) return n > 0 ? 'color:err-pos' : n < 0 ? 'color:err-neg' : 'color:err-zero';
+    }
+    // ABS location columns — highlight missing values
+    if (cl.indexOf('abs location') !== -1 && val === '') return 'color:err-pos';
+    return '';
+  }
+
+  var thead = '<tr>' + h.map(function(col){ return '<th title="' + col + '">' + col + '</th>'; }).join('') + '</tr>';
+  var tbody = rows.map(function(r) {
+    return '<tr>' + h.map(function(col) {
+      var val  = r[col] || '';
+      var hint = cellStyle(col, val);
+      if (hint.indexOf('badge:') === 0) {
+        return '<td><span class="status-badge status-' + hint.replace('badge:','') + '">' + (val||'—') + '</span></td>';
+      }
+      if (hint.indexOf('color:') === 0) {
+        return '<td><span class="' + hint.replace('color:','') + '">' + (val||'—') + '</span></td>';
+      }
+      return '<td title="' + val + '">' + (val||'—') + '</td>';
+    }).join('') + '</tr>';
+  }).join('');
+
+  var isMulti = d.sheet2 && d.sheet2.isMulti;
+  if (!isMulti) {
+    el.innerHTML = '<div class="dyn-table-wrap"><table class="dyn-table"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table></div>';
+    attachTopScrollers(targetId || 'tag-table-wrap');
+    applyFrozenColumnsInContainer(targetId || 'tag-table-wrap');
+  } else {
+    var sections = d.sheet2.sections || [];
+    var html = '';
+    sections.forEach(function(sec) {
+      var secRows = rows.filter(function(r){ return r['__section'] === sec.section; });
+      if (!secRows.length) return;
+      var secTbody = secRows.map(function(r) {
+        return '<tr>' + h.map(function(col) {
+          var val  = r[col] || '';
+          var hint = cellStyle(col, val);
+          if (hint.indexOf('badge:') === 0) return '<td><span class="status-badge status-' + hint.replace('badge:','') + '">' + (val||'—') + '</span></td>';
+          if (hint.indexOf('color:') === 0) return '<td><span class="' + hint.replace('color:','') + '">' + (val||'—') + '</span></td>';
+          return '<td title="' + val + '">' + (val||'—') + '</td>';
+        }).join('') + '</tr>';
+      }).join('');
+      html += '<div class="section-heading">' + sec.section + ' <span style="font-size:0.65rem;opacity:0.7;margin-left:auto">(' + secRows.length + ' records)</span></div>';
+      html += '<div class="dyn-table-wrap" style="margin-bottom:1.5rem"><table class="dyn-table"><thead>' + thead + '</thead><tbody>' + secTbody + '</tbody></table></div>';
+    });
+    el.innerHTML = html;
+  }
+}
+
+// Columns to freeze (by partial name match, case-insensitive)
+var FREEZE_COLS = ['tagid(as per design)', 'tagid'];
+
+function applyFrozenColumns(tableEl) {
+  if (!tableEl) return;
+  var headers = tableEl.querySelectorAll('thead th');
+  if (!headers.length) return;
+
+  // Find index of tag id column
+  var freezeIdx = -1;
+  headers.forEach(function(th, i) {
+    if (i === 0) return; // first col already frozen
+    var txt = th.textContent.toLowerCase().trim();
+    for (var k = 0; k < FREEZE_COLS.length; k++) {
+      if (txt.indexOf(FREEZE_COLS[k]) !== -1) {
+        freezeIdx = i;
+        break;
+      }
+    }
+  });
+  if (freezeIdx === -1) return;
+
+  // Measure left offset = sum of widths of all cols before freezeIdx
+  var leftOffset = 0;
+  for (var i = 0; i < freezeIdx; i++) {
+    leftOffset += headers[i].offsetWidth;
+  }
+
+  // Apply to header and all data cells in that column
+  headers[freezeIdx].classList.add('col-sticky-2');
+  headers[freezeIdx].style.left = leftOffset + 'px';
+
+  var rows = tableEl.querySelectorAll('tbody tr');
+  rows.forEach(function(row) {
+    var cells = row.querySelectorAll('td');
+    if (cells[freezeIdx]) {
+      cells[freezeIdx].classList.add('col-sticky-2');
+      cells[freezeIdx].style.left = leftOffset + 'px';
+    }
+  });
+}
+
+function applyFrozenColumnsInContainer(containerId) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  container.querySelectorAll('.dyn-table').forEach(function(table) {
+    applyFrozenColumns(table);
+  });
+}
+
+function addTopScroller(wrapper) {
+  // wrapper is a .dyn-table-wrap element
+  // Create a mirror scroller div above it
+  var outer = document.createElement('div');
+  outer.className = 'table-scroll-wrapper';
+
+  var top = document.createElement('div');
+  top.className = 'top-scroller';
+
+  var inner = document.createElement('div');
+  inner.className = 'top-scroller-inner';
+  top.appendChild(inner);
+
+  // Insert wrapper: replace dyn-table-wrap in DOM with outer > top + dyn-table-wrap
+  wrapper.parentNode.insertBefore(outer, wrapper);
+  outer.appendChild(top);
+  outer.appendChild(wrapper);
+
+  // Sync scroll widths after table renders
+  function syncWidth() {
+    var tableWidth = wrapper.scrollWidth;
+    inner.style.width = tableWidth + 'px';
+  }
+  syncWidth();
+
+  // Sync scrolling both ways
+  top.addEventListener('scroll', function() {
+    wrapper.scrollLeft = top.scrollLeft;
+  });
+  wrapper.addEventListener('scroll', function() {
+    top.scrollLeft = wrapper.scrollLeft;
+  });
+
+  // Re-sync if table width changes (e.g. filter changes number of rows)
+  var obs = new MutationObserver(syncWidth);
+  obs.observe(wrapper, { childList: true, subtree: true });
+}
+
+// Attach top scrollers to all dyn-table-wrap elements inside a container
+function attachTopScrollers(containerId) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  var wrappers = container.querySelectorAll('.dyn-table-wrap');
+  wrappers.forEach(function(w) {
+    // Only add if not already wrapped
+    if (!w.parentNode.classList.contains('table-scroll-wrapper')) {
+      addTopScroller(w);
+    }
+  });
+}
+
+} // end initApp — progress tracker below
+
+
+// ── GOOGLE SHEETS CONFIG ────────────────────────────────────────────────
+var GSHEET_ID = '1f2e3FmXeP9UrfB5H9rBJV5-32CWXdj6U_RGYaALt_AY';
+
+// Division configs: sheet name + how to parse sections and status
+var DIVISIONS = [
+  {
+    name: 'Mumbai',
+    sheet: 'Mumbai',
+    fromCol: 1, toCol: 2,    // B=From, C=To (0-indexed)
+    statusCol: 5,            // F = Status(Trial-1)
+    headerRows: 2,
+    statusMatch: 'completed'
+  },
+  {
+    name: 'Pune',
+    sheet: 'Pune',
+    fromCol: 1, toCol: 2,
+    statusCol: 5,            // F = Report Generation
+    headerRows: 2,
+    statusMatch: 'completed'
+  },
+  {
+    name: 'Solapur',
+    sheet: 'solapur',
+    fromCol: 1, toCol: 2,
+    statusCol: 5,            // F = Report Generation
+    headerRows: 3,           // 3 header rows before data
+    statusMatch: 'completed'
+  },
+  {
+    name: 'Bhusaval',
+    sheet: 'Bhusawal',
+    fromCol: 1, toCol: 2,
+    statusCol: 8,            // I = Report Generation Phase-I
+    headerRows: 2,
+    statusMatch: 'completed'
+  },
+  {
+    name: 'Nagpur',
+    sheet: 'Nagpur',
+    sectionFromCol: 2,       // C = Block Section Names
+    statusCol: 7,            // H = Analysis reports
+    headerRows: 2,
+    statusMatch: 'completed'
+  },
+  {
+    name: 'WR Ahmedabad',
+    sheet: 'WR-Ahmedabad',
+    fromCol: 1, toCol: 3,    // B=From, D=To
+    statusCol: 6,            // G = Report status Phase-I
+    headerRows: 4,           // 4 header rows
+    statusMatch: 'completed'
+  },
+  {
+    name: 'WR Ratlam',
+    sheet: 'WR Ratlam',
+    sectionFromCol: 0,       // A = combined block section name
+    statusCol: 2,            // C = Report generated
+    headerRows: 2,
+    statusMatch: 'completed'
+  },
+  {
+    name: 'WR Rajkot',
+    sheet: 'WR rajkot',
+    sectionFromCol: 0,       // A = Station/Section Name
+    statusCol: 2,            // C = Report generated
+    headerRows: 2,
+    statusMatch: 'completed'
+  }
+];
+
+var GSHEET_ID = '1f2e3FmXeP9UrfB5H9rBJV5-32CWXdj6U_RGYaALt_AY';
+var gsheetCache = null;
+var _jsonpCounter = 0;
+
+// JSONP fetch — bypasses CORS by injecting a <script> tag
+function fetchSheetJSONP(sheetName, callback) {
+  var callbackName = '_gsheetCb' + (_jsonpCounter++);
+  var url = 'https://docs.google.com/spreadsheets/d/' + GSHEET_ID +
+    '/gviz/tq?tqx=responseHandler:' + callbackName + '&sheet=' + encodeURIComponent(sheetName);
+  
+  console.log('[GSheet] JSONP fetch:', sheetName);
+  
+  window[callbackName] = function(response) {
+    // Clean up
+    delete window[callbackName];
+    var scriptEl = document.getElementById(callbackName);
+    if (scriptEl) scriptEl.parentNode.removeChild(scriptEl);
+    
+    if (response && response.table) {
+      var rows = gvizTableToRows(response.table);
+      console.log('[GSheet] Parsed', sheetName, ':', rows.length, 'rows');
+      callback(null, rows);
+    } else {
+      var errMsg = (response && response.errors && response.errors.length) ?
+        response.errors[0].detailed_message : 'Unknown error';
+      console.error('[GSheet] Error for', sheetName, ':', errMsg);
+      callback(errMsg, null);
+    }
+  };
+  
+  var script = document.createElement('script');
+  script.id = callbackName;
+  script.src = url;
+  script.onerror = function() {
+    delete window[callbackName];
+    script.parentNode.removeChild(script);
+    console.error('[GSheet] Script load failed for', sheetName);
+    callback('Script load failed', null);
+  };
+  document.head.appendChild(script);
+}
+
+// Convert Google Visualization table format to simple 2D array
+function gvizTableToRows(table) {
+  var rows = [];
+  if (!table || !table.rows) return rows;
+  
+  table.rows.forEach(function(row) {
+    var r = [];
+    if (row.c) {
+      row.c.forEach(function(cell) {
+        if (cell === null) {
+          r.push('');
+        } else {
+          // Prefer formatted value (f) over raw value (v) for dates etc.
+          r.push(cell.f || (cell.v !== null && cell.v !== undefined ? String(cell.v) : ''));
+        }
+      });
+    }
+    rows.push(r);
+  });
+  return rows;
+}
+
+function parseDivisionFromRows(rawRows, config) {
+  var sections = [];
+  var startRow = config.headerRows || 2;
+  console.log('[Parse]', config.name, '- total rows:', rawRows.length, 'startRow:', startRow);
+  
+  for (var i = startRow; i < rawRows.length; i++) {
+    var row = rawRows[i];
+    if (!row || row.length < 2) continue;
+
+    var sectionName = '';
+    if (config.sectionFromCol !== undefined) {
+      sectionName = String(row[config.sectionFromCol] || '').trim();
+    } else {
+      var from = String(row[config.fromCol] || '').trim();
+      var to = config.toCol >= 0 ? String(row[config.toCol] || '').trim() : '';
+      if (from && to) {
+        sectionName = from + ' - ' + to;
+      } else if (from) {
+        sectionName = from;
+      }
+    }
+
+    if (!sectionName) continue;
+    
+    var nameLower = sectionName.toLowerCase();
+    if (/^\d+\.?\d*$/.test(sectionName)) continue;
+    if (nameLower === 'from' || nameLower === 'to' || nameLower === 'from - to') continue;
+    if (nameLower === '#' || nameLower === 'total' || nameLower === 'completed') continue;
+    if (sectionName.indexOf('=') === 0) continue;
+    if (nameLower.indexOf('station/section') !== -1) continue;
+    if (nameLower.indexOf('block section') === 0 && nameLower.length < 20) continue;
+    if (nameLower === 'date' || (nameLower.indexOf('date') === 0 && sectionName.length < 8)) continue;
+
+    var statusVal = String(row[config.statusCol] || '').trim().toLowerCase();
+    var status = 'pending';
+    if (statusVal.indexOf('completed') !== -1 || statusVal.indexOf('complete') !== -1) {
+      status = 'completed';
+    } else if (statusVal.indexOf('pending') !== -1) {
+      status = 'pending';
+    } else if (statusVal && statusVal.indexOf('trial not done') === -1 && statusVal.indexOf('not') === -1 && statusVal.length > 1) {
+      status = 'in-progress';
+    }
+
+    sections.push({
+      name: sectionName,
+      status: status,
+      rawStatus: String(row[config.statusCol] || '').trim()
+    });
+  }
+  console.log('[Parse]', config.name, '- found', sections.length, 'sections,', 
+    sections.filter(function(s){return s.status==='completed'}).length, 'completed');
+  return sections;
+}
+
+function fetchAllDivisions(callback) {
+  var results = {};
+  var pending = DIVISIONS.length;
+
+  DIVISIONS.forEach(function(div) {
+    fetchSheetJSONP(div.sheet, function(err, rows) {
+      if (err) {
+        console.error('[GSheet] Error for', div.name, ':', err);
+        results[div.name] = { config: div, sections: [], error: err };
+      } else {
+        var configWithName = {};
+        for (var k in div) configWithName[k] = div[k];
+        configWithName.name = div.name;
+        var sections = parseDivisionFromRows(rows, configWithName);
+        results[div.name] = { config: div, sections: sections, error: null };
+      }
+      pending--;
+      if (pending === 0) {
+        callback(results);
+      }
+    });
+  });
+}
+
+function getProgressFromSheet(divisionData) {
+  var allItems = [];
+  var totalSections = 0;
+  var totalCompleted = 0;
+  var totalPending = 0;
+  var totalInProgress = 0;
+  var divSummaries = [];
+
+  DIVISIONS.forEach(function(div) {
+    var data = divisionData[div.name];
+    if (!data) return;
+    var sections = data.sections;
+    var completed = 0, pending = 0, inProgress = 0;
+    sections.forEach(function(s) {
+      if (s.status === 'completed') completed++;
+      else if (s.status === 'in-progress') inProgress++;
+      else pending++;
+
+      allItems.push({
+        name: s.name,
+        division: div.name,
+        status: s.status,
+        rawStatus: s.rawStatus
+      });
+    });
+
+    divSummaries.push({
+      name: div.name,
+      total: sections.length,
+      completed: completed,
+      pending: pending,
+      inProgress: inProgress,
+      pct: sections.length ? Math.round((completed / sections.length) * 100) : 0
+    });
+
+    totalSections += sections.length;
+    totalCompleted += completed;
+    totalPending += pending;
+    totalInProgress += inProgress;
+  });
+
+  return {
+    total: totalSections,
+    completed: totalCompleted,
+    pending: totalPending,
+    inProgress: totalInProgress,
+    pct: totalSections ? Math.round((totalCompleted / totalSections) * 100) : 0,
+    divisions: divSummaries,
+    items: allItems
+  };
+}
+
+function updateProgressBtnPct() {
+  // Show a loading indicator until data is fetched
+  var el = document.getElementById('progress-btn-pct');
+  if (!el) return;
+  if (gsheetCache) {
+    var p = getProgressFromSheet(gsheetCache);
+    el.textContent = p.pct + '%';
+  }
+}
+
+function renderProgressPage() {
+  var body = document.getElementById('progress-body');
+  body.innerHTML = '<div style="text-align:center;padding:4rem 2rem"><div style="font-family:var(--mono);font-size:1rem;color:var(--amber);margin-bottom:1rem">LOADING DATA FROM GOOGLE SHEETS...</div><div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted)">Fetching ' + DIVISIONS.length + ' division sheets</div></div>';
+  
+  fetchAllDivisions(function(divisionData) {
+    gsheetCache = divisionData;
+    var p = getProgressFromSheet(divisionData);
+    updateProgressBtnPct();
+    
+    // Check if we got any data
+    if (p.total === 0) {
+      body.innerHTML = '<div style="text-align:center;padding:4rem 2rem">' +
+        '<div style="font-family:var(--mono);font-size:1.2rem;color:var(--red);margin-bottom:1rem;font-weight:700">COULD NOT LOAD DATA</div>' +
+        '<div style="font-family:var(--mono);font-size:0.85rem;color:var(--text2);margin-bottom:0.5rem;font-weight:600">The Google Sheet may not be accessible. Please ensure:</div>' +
+        '<div style="font-family:var(--mono);font-size:0.8rem;color:var(--muted);text-align:left;max-width:500px;margin:1rem auto;line-height:1.8">' +
+        '1. The sheet is shared as "Anyone with the link can view"<br>' +
+        '2. You have internet connectivity<br>' +
+        '3. Open browser console (F12) for detailed error logs</div>' +
+        '<button onclick="renderProgressPage()" style="margin-top:1.5rem;background:var(--amber);color:var(--bg);border:none;font-family:var(--mono);font-size:0.85rem;font-weight:700;padding:0.6rem 1.5rem;border-radius:6px;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase">Retry</button>' +
+        '</div>';
+      return;
+    }
+    
+    renderProgressContent(body, p);
+  });
+}
+
+function renderProgressContent(body, p) {
+  var pct = p.pct;
+
+  // Donut chart math
+  var radius = 85;
+  var circumference = 2 * Math.PI * radius;
+  var completedOffset = circumference - (pct / 100) * circumference;
+  var inProgPct = p.total ? Math.round((p.inProgress / p.total) * 100) : 0;
+  var combinedPct = p.total ? Math.round(((p.completed + p.inProgress) / p.total) * 100) : 0;
+  var combinedOffset = circumference - (combinedPct / 100) * circumference;
+
+  var html = '';
+
+  // Top row: donut + KPIs
+  html += '<div class="progress-top-row">';
+
+  // Donut
+  html += '<div class="donut-container">';
+  html += '<svg class="donut-svg" viewBox="0 0 220 220">';
+  html += '<circle class="donut-track" cx="110" cy="110" r="' + radius + '"/>';
+  html += '<circle class="donut-fill" cx="110" cy="110" r="' + radius + '" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + circumference + '" id="donut-arc-partial" style="stroke:var(--amber);opacity:0.5"/>';
+  html += '<circle class="donut-fill-green" cx="110" cy="110" r="' + radius + '" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + circumference + '" id="donut-arc"/>';
+  html += '</svg>';
+  html += '<div class="donut-center">';
+  html += '<div class="donut-pct" id="donut-pct-val">0%</div>';
+  html += '<div class="donut-pct-label">Complete</div>';
+  html += '</div>';
+  html += '</div>';
+
+  // KPIs
+  html += '<div class="progress-kpis">';
+  html += '<div class="progress-kpi pk-blue"><div class="pk-label">Total Sections</div><div class="pk-value">' + p.total + '</div><div class="pk-sub">all divisions</div></div>';
+  html += '<div class="progress-kpi pk-green"><div class="pk-label">Completed</div><div class="pk-value">' + p.completed + '</div><div class="pk-sub">reports done</div></div>';
+  html += '<div class="progress-kpi pk-amber"><div class="pk-label">In Progress</div><div class="pk-value">' + p.inProgress + '</div><div class="pk-sub">partially done</div></div>';
+  html += '<div class="progress-kpi pk-red"><div class="pk-label">Pending</div><div class="pk-value">' + p.pending + '</div><div class="pk-sub">not started</div></div>';
+  html += '</div>';
+  html += '</div>';
+
+  // Progress bar
+  html += '<div style="margin-bottom:2rem">';
+  html += '<div style="display:flex;justify-content:space-between;margin-bottom:0.4rem">';
+  html += '<span style="font-family:var(--mono);font-size:0.75rem;font-weight:600;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase">Overall Progress</span>';
+  html += '<span style="font-family:var(--mono);font-size:0.75rem;font-weight:700;color:var(--amber)">' + p.completed + ' / ' + p.total + ' complete</span>';
+  html += '</div>';
+  html += '<div style="height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;display:flex">';
+  html += '<div id="progress-bar-fill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),#34D399);border-radius:4px 0 0 4px;transition:width 1.5s cubic-bezier(0.4,0,0.2,1);box-shadow:0 0 8px rgba(16,185,129,0.4)"></div>';
+  html += '<div id="progress-bar-partial" style="height:100%;width:0%;background:linear-gradient(90deg,var(--amber),var(--amber2));transition:width 1.5s cubic-bezier(0.4,0,0.2,1);opacity:0.6"></div>';
+  html += '</div>';
+  html += '</div>';
+
+  // ── DIVISION SUMMARY CARDS ──
+  html += '<div class="progress-section-title">Division Summary</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.75rem;margin-bottom:2rem">';
+  p.divisions.forEach(function(div) {
+    var barW = div.total ? Math.round((div.completed / div.total) * 100) : 0;
+    html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem;cursor:pointer" class="div-card" data-div="' + div.name + '">';
+    html += '<div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--text);margin-bottom:0.5rem">' + div.name + '</div>';
+    html += '<div style="display:flex;justify-content:space-between;margin-bottom:0.3rem">';
+    html += '<span style="font-family:var(--mono);font-size:0.75rem;font-weight:600;color:var(--green)">' + div.completed + '/' + div.total + '</span>';
+    html += '<span style="font-family:var(--mono);font-size:0.75rem;font-weight:700;color:var(--amber)">' + barW + '%</span>';
+    html += '</div>';
+    html += '<div style="height:5px;background:var(--bg4);border-radius:3px;overflow:hidden">';
+    html += '<div style="height:100%;width:' + barW + '%;background:var(--green);border-radius:3px;transition:width 0.8s ease"></div>';
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // ── SECTION CHECKLIST ──
+  html += '<div class="progress-section-title">Section Checklist</div>';
+
+  // Division filter + status filter
+  html += '<div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap">';
+  html += '<select id="pf-div-filter" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:0.8rem;font-weight:600;padding:0.4rem 0.8rem;border-radius:5px;cursor:pointer;outline:none">';
+  html += '<option value="all">All Divisions</option>';
+  p.divisions.forEach(function(div) {
+    html += '<option value="' + div.name + '">' + div.name + ' (' + div.total + ')</option>';
+  });
+  html += '</select>';
+  html += '</div>';
+
+  html += '<div class="progress-filter-tabs" id="pf-tabs">';
+  html += '<button class="pf-tab pf-active-all" data-pf="all">All (' + p.total + ')</button>';
+  html += '<button class="pf-tab" data-pf="completed">Completed (' + p.completed + ')</button>';
+  html += '<button class="pf-tab" data-pf="in-progress">In Progress (' + p.inProgress + ')</button>';
+  html += '<button class="pf-tab" data-pf="pending">Pending (' + p.pending + ')</button>';
+  html += '</div>';
+
+  // Section list
+  html += '<div class="progress-list" id="progress-list">';
+  p.items.forEach(function(item, i) {
+    var cls = item.status === 'completed' ? 'pi-done' : item.status === 'in-progress' ? 'pi-partial' : 'pi-pending';
+    var badge = item.status === 'completed' ? 'COMPLETE' : item.status === 'in-progress' ? 'IN PROGRESS' : 'PENDING';
+    html += '<div class="progress-item ' + cls + '" data-pstatus="' + item.status + '" data-pdiv="' + item.division + '" style="animation-delay:' + (i * 0.015) + 's">';
+    html += '<div class="progress-item-status"></div>';
+    html += '<div class="progress-item-name">' + item.name + '</div>';
+    html += '<div style="font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--muted);margin-right:0.5rem;white-space:nowrap">' + item.division + '</div>';
+    html += '<div class="progress-item-badge">' + badge + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  body.innerHTML = html;
+
+  // Animate donut and bars
+  setTimeout(function() {
+    var arc = document.getElementById('donut-arc');
+    if (arc) arc.setAttribute('stroke-dashoffset', completedOffset);
+    var arcP = document.getElementById('donut-arc-partial');
+    if (arcP) arcP.setAttribute('stroke-dashoffset', combinedOffset);
+    var pctEl = document.getElementById('donut-pct-val');
+    if (pctEl) animateNumber(pctEl, 0, pct, 1200);
+    var barFill = document.getElementById('progress-bar-fill');
+    if (barFill) barFill.style.width = (p.total ? (p.completed / p.total * 100) : 0) + '%';
+    var barP = document.getElementById('progress-bar-partial');
+    if (barP) barP.style.width = inProgPct + '%';
+  }, 100);
+
+  // Wire filter tabs
+  var statusFilter = 'all';
+  var divFilter = 'all';
+
+  function applyFilters() {
+    var items = document.querySelectorAll('#progress-list .progress-item');
+    var countAll = 0, countCompleted = 0, countInProgress = 0, countPending = 0;
+    
+    items.forEach(function(item) {
+      var matchDiv = (divFilter === 'all') || (item.dataset.pdiv === divFilter);
+      var matchStatus = (statusFilter === 'all') || (item.dataset.pstatus === statusFilter);
+      item.style.display = (matchStatus && matchDiv) ? 'flex' : 'none';
+      
+      // Count items matching the division filter (regardless of status filter)
+      if (matchDiv) {
+        countAll++;
+        if (item.dataset.pstatus === 'completed') countCompleted++;
+        else if (item.dataset.pstatus === 'in-progress') countInProgress++;
+        else countPending++;
+      }
+    });
+    
+    // Update tab labels with new counts
+    var tabs = document.querySelectorAll('#pf-tabs .pf-tab');
+    tabs.forEach(function(tab) {
+      var f = tab.dataset.pf;
+      var count = f === 'all' ? countAll : f === 'completed' ? countCompleted : f === 'in-progress' ? countInProgress : countPending;
+      var label = f === 'all' ? 'All' : f === 'completed' ? 'Completed' : f === 'in-progress' ? 'In Progress' : 'Pending';
+      tab.textContent = label + ' (' + count + ')';
+    });
+  }
+
+  var tabs = document.querySelectorAll('#pf-tabs .pf-tab');
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      statusFilter = tab.dataset.pf;
+      tabs.forEach(function(t) {
+        var tf = t.dataset.pf;
+        t.className = 'pf-tab' + (tf === statusFilter ? (' pf-active-' + tf) : '');
+      });
+      applyFilters();
+    });
+  });
+
+  var divSelect = document.getElementById('pf-div-filter');
+  if (divSelect) {
+    divSelect.addEventListener('change', function() {
+      divFilter = divSelect.value;
+      applyFilters();
+    });
+  }
+
+  // Wire division cards to filter
+  document.querySelectorAll('.div-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var divName = card.dataset.div;
+      if (divSelect) {
+        divSelect.value = divName;
+        divFilter = divName;
+        applyFilters();
+      }
+      // Scroll to list
+      var list = document.getElementById('progress-list');
+      if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
+
+function animateNumber(el, from, to, duration) {
+  var start = performance.now();
+  function step(now) {
+    var progress = Math.min((now - start) / duration, 1);
+    var eased = 1 - Math.pow(1 - progress, 3);
+    var current = Math.round(from + (to - from) * eased);
+    el.textContent = current + '%';
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+</script>
+
+<script>
+// ── PROGRESS SCREEN WIRING ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  var openBtn  = document.getElementById('open-progress-btn');
+  var headerBtn = document.getElementById('header-progress-btn');
+  var backBtn  = document.getElementById('progress-back-btn');
+  var screenP  = document.getElementById('screen-progress');
+
+  function openProgressScreen() {
+    renderProgressPage();
+    screenP.classList.add('visible');
+  }
+
+  if (openBtn) {
+    openBtn.addEventListener('click', openProgressScreen);
+  }
+  if (headerBtn) {
+    headerBtn.addEventListener('click', openProgressScreen);
+  }
+  if (backBtn) {
+    backBtn.addEventListener('click', function() {
+      screenP.classList.remove('visible');
+    });
+  }
+
+  // PDF Download
+  var pdfBtn = document.getElementById('download-progress-pdf');
+  if (pdfBtn) {
+    pdfBtn.addEventListener('click', function() {
+      if (!gsheetCache) {
+        alert('Please open the Progress page first to load data from Google Sheets.');
+        return;
+      }
+      generateProgressPDF();
+    });
+  }
+});
+
+function generateProgressPDF() {
+  var p = getProgressFromSheet(gsheetCache);
+  var today = new Date();
+  var dateStr2 = today.getDate() + '-' + (today.getMonth()+1) + '-' + today.getFullYear();
+
+  var printWin = window.open('', '_blank');
+  if (!printWin) {
+    alert('Pop-up blocked. Please allow pop-ups for this page.');
+    return;
+  }
+
+  var printHTML = '<!DOCTYPE html><html><head><title>Kavach Progress Report</title>';
+  printHTML += '<style>';
+  printHTML += '@page { size: A4; margin: 15mm; }';
+  printHTML += 'body { font-family: "Courier New", monospace; background: #080A0E; color: #E5E7EB; margin: 0; padding: 20px; }';
+  printHTML += '@media print { body { background: white; color: #111; } .no-print { display: none !important; } .hdr-bar { background: #F59E0B !important; } th { background: #f3f4f6 !important; color: #111 !important; } td { color: #333 !important; border-color: #ddd !important; } .status-completed { color: #059669 !important; } .status-in-progress { color: #D97706 !important; } .status-pending { color: #DC2626 !important; } h1, h2, h3 { color: #111 !important; } .sub { color: #666 !important; } .kpi-box { background: #f9fafb !important; border-color: #e5e7eb !important; } .kpi-val-blue { color: #2563EB !important; } .kpi-val-green { color: #059669 !important; } .kpi-val-amber { color: #D97706 !important; } .kpi-val-red { color: #DC2626 !important; } .div-hdr { background: #f3f4f6 !important; color: #111 !important; } }';
+  printHTML += 'h1 { font-size: 22px; margin: 0; color: #F59E0B; }';
+  printHTML += 'h2 { font-size: 16px; margin: 20px 0 10px; color: #F59E0B; }';
+  printHTML += '.sub { font-size: 11px; color: #9CA3AF; margin: 4px 0 0; }';
+  printHTML += '.hdr-bar { height: 3px; background: #F59E0B; margin: 15px 0; border: none; }';
+  printHTML += '.kpis { display: flex; gap: 12px; margin: 16px 0 20px; flex-wrap: wrap; }';
+  printHTML += '.kpi-box { flex: 1; min-width: 100px; background: #0D1117; border: 1px solid #1F2937; border-radius: 6px; padding: 12px; text-align: center; }';
+  printHTML += '.kpi-label { font-size: 9px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; }';
+  printHTML += '.kpi-val { font-size: 28px; font-weight: 700; margin: 4px 0; }';
+  printHTML += '.kpi-val-blue { color: #3B82F6; } .kpi-val-green { color: #10B981; } .kpi-val-amber { color: #F59E0B; } .kpi-val-red { color: #EF4444; }';
+  printHTML += '.kpi-sub { font-size: 9px; color: #6B7280; }';
+  printHTML += 'table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }';
+  printHTML += 'th { background: #141920; color: #9CA3AF; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 7px 10px; text-align: left; border-bottom: 2px solid #F59E0B; font-weight: 700; }';
+  printHTML += 'td { padding: 6px 10px; border-bottom: 1px solid #1F2937; font-weight: 600; }';
+  printHTML += 'tr:nth-child(even) td { background: rgba(13,17,23,0.4); }';
+  printHTML += '.status-completed { color: #10B981; font-weight: 700; } .status-in-progress { color: #F59E0B; font-weight: 700; } .status-pending { color: #EF4444; font-weight: 700; }';
+  printHTML += '.div-hdr { background: rgba(245,158,11,0.06); padding: 8px 12px; margin: 16px 0 4px; border-left: 3px solid #F59E0B; font-size: 13px; font-weight: 700; color: #F59E0B; page-break-before: auto; }';
+  printHTML += '.pbar { height: 8px; background: #1C2330; border-radius: 4px; overflow: hidden; display: flex; margin: 8px 0 16px; }';
+  printHTML += '.pbar-green { background: #10B981; height: 100%; } .pbar-amber { background: rgba(245,158,11,0.6); height: 100%; }';
+  printHTML += '.credit { font-size: 9px; color: #6B7280; margin-top: 4px; }';
+  printHTML += '.footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #1F2937; font-size: 9px; color: #6B7280; display: flex; justify-content: space-between; }';
+
+  // Selector panel styles
+  printHTML += '.selector-panel { background: #0D1117; border: 1px solid #F59E0B; border-radius: 10px; padding: 24px; margin: 20px 0; }';
+  printHTML += '.selector-title { font-size: 14px; font-weight: 700; color: #F59E0B; margin-bottom: 16px; letter-spacing: 0.1em; text-transform: uppercase; }';
+  printHTML += '.selector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; }';
+  printHTML += '.div-check-item { display: flex; align-items: center; gap: 8px; background: #141920; border: 1px solid #1F2937; border-radius: 6px; padding: 10px 14px; cursor: pointer; transition: all 0.2s; }';
+  printHTML += '.div-check-item:hover { border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.04); }';
+  printHTML += '.div-check-item.checked { border-color: #F59E0B; background: rgba(245,158,11,0.08); }';
+  printHTML += '.div-check-box { width: 18px; height: 18px; border: 2px solid #4B5563; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: transparent; transition: all 0.2s; flex-shrink: 0; }';
+  printHTML += '.div-check-item.checked .div-check-box { background: #F59E0B; border-color: #F59E0B; color: #080A0E; }';
+  printHTML += '.div-check-label { font-size: 12px; font-weight: 600; color: #E5E7EB; }';
+  printHTML += '.div-check-count { font-size: 10px; color: #6B7280; margin-left: auto; }';
+  printHTML += '.sel-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }';
+  printHTML += '.sel-btn { font-family: "Courier New", monospace; font-size: 12px; font-weight: 700; padding: 10px 24px; border-radius: 6px; cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid; transition: all 0.2s; }';
+  printHTML += '.sel-btn-primary { background: #F59E0B; border-color: #F59E0B; color: #080A0E; }';
+  printHTML += '.sel-btn-primary:hover { background: #FCD34D; }';
+  printHTML += '.sel-btn-ghost { background: none; border-color: #4B5563; color: #9CA3AF; }';
+  printHTML += '.sel-btn-ghost:hover { border-color: #F59E0B; color: #F59E0B; }';
+  printHTML += '.sel-btn-ghost.active { border-color: #F59E0B; color: #F59E0B; background: rgba(245,158,11,0.08); }';
+
+  printHTML += '</style></head><body>';
+
+  // === SELECTOR PANEL (visible before print, hidden during print) ===
+  printHTML += '<div class="no-print" id="selector-panel">';
+  printHTML += '<h1>KAVACH RFID</h1>';
+  printHTML += '<div class="sub">TAG VERIFICATION SYSTEM — HBL ENGINEERING</div>';
+  printHTML += '<hr class="hdr-bar"/>';
+
+  printHTML += '<div class="selector-panel">';
+  printHTML += '<div class="selector-title">Select Divisions for Report</div>';
+  printHTML += '<div class="sel-actions" style="margin-bottom:16px">';
+  printHTML += '<button class="sel-btn sel-btn-ghost active" id="sel-all-btn" onclick="toggleAll()">Select All</button>';
+  printHTML += '<button class="sel-btn sel-btn-ghost" id="sel-none-btn" onclick="selectNone()">Deselect All</button>';
+  printHTML += '<span style="font-size:11px;color:#6B7280;margin-left:auto" id="sel-summary"></span>';
+  printHTML += '</div>';
+  printHTML += '<div class="selector-grid" id="selector-grid">';
+
+  p.divisions.forEach(function(div, i) {
+    printHTML += '<div class="div-check-item checked" data-div="' + div.name + '" onclick="toggleDiv(this)">';
+    printHTML += '<div class="div-check-box">&#10003;</div>';
+    printHTML += '<span class="div-check-label">' + div.name + '</span>';
+    printHTML += '<span class="div-check-count">' + div.completed + '/' + div.total + '</span>';
+    printHTML += '</div>';
+  });
+
+  printHTML += '</div>';
+  printHTML += '<div class="sel-actions">';
+  printHTML += '<button class="sel-btn sel-btn-primary" onclick="generateReport()">Generate Report &amp; Print</button>';
+  printHTML += '</div>';
+  printHTML += '</div>';
+  printHTML += '</div>';
+
+  // === REPORT CONTENT (hidden initially, shown after generate) ===
+  printHTML += '<div id="report-content" style="display:none">';
+  printHTML += '<h1>KAVACH RFID</h1>';
+  printHTML += '<div class="sub">TAG VERIFICATION SYSTEM — HBL ENGINEERING</div>';
+  printHTML += '<hr class="hdr-bar"/>';
+  printHTML += '<h2 id="report-title">SECTION PROGRESS REPORT</h2>';
+  printHTML += '<div class="sub">Generated: ' + dateStr2 + ' | Source: Google Sheets (Live Data)</div>';
+  printHTML += '<div id="report-kpis"></div>';
+  printHTML += '<div id="report-bar"></div>';
+  printHTML += '<div id="report-tables"></div>';
+  printHTML += '<div class="footer"><span>Kavach RFID Tag Verification — HBL Engineering</span><span>' + dateStr2 + '</span></div>';
+  printHTML += '<button class="sel-btn sel-btn-ghost no-print" style="margin:20px auto;display:block" onclick="backToSelector()">← Back to Selection</button>';
+  printHTML += '<button class="sel-btn sel-btn-primary no-print" style="margin:10px auto;display:block" onclick="window.print()">Save as PDF / Print</button>';
+  printHTML += '</div>';
+
+  // === JAVASCRIPT ===
+  printHTML += '<script>';
+  printHTML += 'var allDivData = ' + JSON.stringify(p.divisions) + ';';
+  printHTML += 'var allItems = ' + JSON.stringify(p.items) + ';';
+
+  printHTML += 'function getSelectedDivs() {';
+  printHTML += '  var items = document.querySelectorAll(".div-check-item");';
+  printHTML += '  var selected = [];';
+  printHTML += '  items.forEach(function(el) { if (el.classList.contains("checked")) selected.push(el.dataset.div); });';
+  printHTML += '  return selected;';
+  printHTML += '}';
+
+  printHTML += 'function updateSummary() {';
+  printHTML += '  var sel = getSelectedDivs();';
+  printHTML += '  document.getElementById("sel-summary").textContent = sel.length + " of " + allDivData.length + " divisions selected";';
+  printHTML += '  document.getElementById("sel-all-btn").classList.toggle("active", sel.length === allDivData.length);';
+  printHTML += '  document.getElementById("sel-none-btn").classList.toggle("active", sel.length === 0);';
+  printHTML += '}';
+
+  printHTML += 'function toggleDiv(el) {';
+  printHTML += '  el.classList.toggle("checked");';
+  printHTML += '  updateSummary();';
+  printHTML += '}';
+
+  printHTML += 'function toggleAll() {';
+  printHTML += '  var items = document.querySelectorAll(".div-check-item");';
+  printHTML += '  items.forEach(function(el) { el.classList.add("checked"); });';
+  printHTML += '  updateSummary();';
+  printHTML += '}';
+
+  printHTML += 'function selectNone() {';
+  printHTML += '  var items = document.querySelectorAll(".div-check-item");';
+  printHTML += '  items.forEach(function(el) { el.classList.remove("checked"); });';
+  printHTML += '  updateSummary();';
+  printHTML += '}';
+
+  printHTML += 'function backToSelector() {';
+  printHTML += '  document.getElementById("selector-panel").style.display = "block";';
+  printHTML += '  document.getElementById("report-content").style.display = "none";';
+  printHTML += '}';
+
+  printHTML += 'function generateReport() {';
+  printHTML += '  var sel = getSelectedDivs();';
+  printHTML += '  if (!sel.length) { alert("Please select at least one division."); return; }';
+  printHTML += '  var divs = allDivData.filter(function(d) { return sel.indexOf(d.name) !== -1; });';
+  printHTML += '  var items = allItems.filter(function(it) { return sel.indexOf(it.division) !== -1; });';
+  printHTML += '  var total = 0, completed = 0, inProgress = 0, pending = 0;';
+  printHTML += '  divs.forEach(function(d) { total += d.total; completed += d.completed; inProgress += d.inProgress; pending += d.pending; });';
+  printHTML += '  var pct = total ? Math.round((completed / total) * 100) : 0;';
+
+  // Title
+  printHTML += '  var titleText = sel.length === allDivData.length ? "ALL DIVISIONS" : sel.join(", ");';
+  printHTML += '  document.getElementById("report-title").textContent = "SECTION PROGRESS REPORT — " + titleText;';
+
+  // KPIs
+  printHTML += '  var khtml = "<div class=\\"kpis\\">";';
+  printHTML += '  khtml += "<div class=\\"kpi-box\\"><div class=\\"kpi-label\\">Total</div><div class=\\"kpi-val kpi-val-blue\\">" + total + "</div><div class=\\"kpi-sub\\">sections</div></div>";';
+  printHTML += '  khtml += "<div class=\\"kpi-box\\"><div class=\\"kpi-label\\">Completed</div><div class=\\"kpi-val kpi-val-green\\">" + completed + "</div><div class=\\"kpi-sub\\">reports done</div></div>";';
+  printHTML += '  khtml += "<div class=\\"kpi-box\\"><div class=\\"kpi-label\\">In Progress</div><div class=\\"kpi-val kpi-val-amber\\">" + inProgress + "</div><div class=\\"kpi-sub\\">partial</div></div>";';
+  printHTML += '  khtml += "<div class=\\"kpi-box\\"><div class=\\"kpi-label\\">Pending</div><div class=\\"kpi-val kpi-val-red\\">" + pending + "</div><div class=\\"kpi-sub\\">not started</div></div>";';
+  printHTML += '  khtml += "</div>";';
+  printHTML += '  document.getElementById("report-kpis").innerHTML = khtml;';
+
+  // Progress bar
+  printHTML += '  var greenW = total ? (completed / total * 100) : 0;';
+  printHTML += '  var amberW = total ? (inProgress / total * 100) : 0;';
+  printHTML += '  var bhtml = "<div style=\\"text-align:right;font-size:13px;font-weight:700;color:#E5E7EB\\">" + pct + "% Complete</div>";';
+  printHTML += '  bhtml += "<div class=\\"pbar\\"><div class=\\"pbar-green\\" style=\\"width:" + greenW + "%\\"></div><div class=\\"pbar-amber\\" style=\\"width:" + amberW + "%\\"></div></div>";';
+  printHTML += '  document.getElementById("report-bar").innerHTML = bhtml;';
+
+  // Tables
+  printHTML += '  var thtml = "";';
+  printHTML += '  divs.forEach(function(div) {';
+  printHTML += '    var divItems = items.filter(function(it) { return it.division === div.name; });';
+  printHTML += '    thtml += "<div class=\\"div-hdr\\">" + div.name + " — " + div.completed + "/" + div.total + " complete (" + div.pct + "%)</div>";';
+  printHTML += '    thtml += "<table><thead><tr><th>#</th><th>Section</th><th>Status</th></tr></thead><tbody>";';
+  printHTML += '    divItems.forEach(function(item, i) {';
+  printHTML += '      var statusCls = "status-" + item.status;';
+  printHTML += '      var label = item.status === "completed" ? "COMPLETED" : item.status === "in-progress" ? "IN PROGRESS" : "PENDING";';
+  printHTML += '      thtml += "<tr><td>" + (i+1) + "</td><td>" + item.name + "</td><td class=\\"" + statusCls + "\\">" + label + "</td></tr>";';
+  printHTML += '    });';
+  printHTML += '    thtml += "</tbody></table>";';
+  printHTML += '  });';
+  printHTML += '  document.getElementById("report-tables").innerHTML = thtml;';
+
+  // Show report, hide selector
+  printHTML += '  document.getElementById("selector-panel").style.display = "none";';
+  printHTML += '  document.getElementById("report-content").style.display = "block";';
+  printHTML += '}';
+
+  printHTML += 'updateSummary();';
+  printHTML += '<\/script>';
+  printHTML += '</body></html>';
+
+  printWin.document.write(printHTML);
+  printWin.document.close();
+}
+</script>
+</body>
+</html>
