@@ -2709,6 +2709,7 @@
             <button class="ai-action-btn" id="ai-btn-anomaly">&#9888; Detect Anomalies</button>
           </div>
           <div class="ai-result" id="ai-result-summary" style="display:none"></div>
+          <button class="ai-action-btn ai-print-btn" id="ai-print-summary" style="display:none;margin-top:0.75rem" onclick="printAiResult('ai-result-summary','Summary &amp; Anomaly Detection')">&#128438; Print / Save PDF</button>
         </div>
 
         <!-- Query Tab -->
@@ -2720,6 +2721,7 @@
             <button class="ai-send-btn" id="ai-query-send">Ask &#8594;</button>
           </div>
           <div class="ai-result" id="ai-result-query" style="display:none"></div>
+          <button class="ai-action-btn ai-print-btn" id="ai-print-query" style="display:none;margin-top:0.75rem" onclick="printAiResult('ai-result-query','Data Query Response')">&#128438; Print / Save PDF</button>
         </div>
 
         <!-- Predictions Tab -->
@@ -2730,6 +2732,7 @@
             <button class="ai-action-btn" id="ai-btn-priority">&#127919; Priority Recommendations</button>
           </div>
           <div class="ai-result" id="ai-result-predict" style="display:none"></div>
+          <button class="ai-action-btn ai-print-btn" id="ai-print-predict" style="display:none;margin-top:0.75rem" onclick="printAiResult('ai-result-predict','Prediction &amp; Recommendations')">&#128438; Print / Save PDF</button>
         </div>
       </div>
     </div>
@@ -3713,11 +3716,6 @@ function parseDivisionFromRows(rawRows, config) {
   var skipped = { empty: 0, short: 0, number: 0, header: 0, formula: 0 };
   console.log('[Parse]', config.name, '- total rows:', rawRows.length, 'startRow:', startRow);
   
-  // Debug: log first few data rows to understand structure
-  for (var d = startRow; d < Math.min(startRow + 3, rawRows.length); d++) {
-    console.log('[Parse]', config.name, '- sample row', d, ':', JSON.stringify(rawRows[d]));
-  }
-  
   var lastFrom = ''; // carry forward for merged cells
   
   for (var i = startRow; i < rawRows.length; i++) {
@@ -4050,62 +4048,6 @@ function renderProgressContent(body, p, divisionData) {
     html += '</div>';
   });
   html += '</div>';
-
-  // ── DEBUG: RAW DATA DUMP ──
-  html += '<div class="progress-section-title" style="margin-top:2rem">Debug: Raw API Data</div>';
-  html += '<div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:1rem">This section shows raw data from Google Sheets API for debugging. Remove after fixing.</div>';
-  
-  if (divisionData) {
-    DIVISIONS.forEach(function(div) {
-      var data = divisionData[div.name];
-      if (!data) return;
-      var rawRows = data.rawRows || [];
-      var sections = data.sections || [];
-      var cfg = div;
-      
-      html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1rem">';
-      html += '<div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--amber);margin-bottom:0.5rem">' + div.name + ' (sheet: ' + div.sheet + ')</div>';
-      html += '<div style="font-family:var(--mono);font-size:0.7rem;color:var(--text2);margin-bottom:0.3rem">Config: fromCol=' + (cfg.fromCol !== undefined ? cfg.fromCol : 'N/A') + ', toCol=' + (cfg.toCol !== undefined ? cfg.toCol : 'N/A') + ', sectionFromCol=' + (cfg.sectionFromCol !== undefined ? cfg.sectionFromCol : 'N/A') + ', statusCol=' + cfg.statusCol + ', headerRows=' + cfg.headerRows + '</div>';
-      html += '<div style="font-family:var(--mono);font-size:0.7rem;color:var(--green);margin-bottom:0.3rem">Total raw rows: ' + rawRows.length + ' | Parsed sections: ' + sections.length + '</div>';
-      
-      if (data.error) {
-        html += '<div style="font-family:var(--mono);font-size:0.7rem;color:var(--red)">ERROR: ' + data.error + '</div>';
-      }
-      
-      // Show first 3 raw rows (from beginning)
-      html += '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:0.5rem;overflow-x:auto">';
-      html += '<div style="color:var(--amber);margin-bottom:0.3rem">First 3 rows (from row 0):</div>';
-      for (var ri = 0; ri < Math.min(3, rawRows.length); ri++) {
-        var row = rawRows[ri];
-        var cols = [];
-        for (var ci = 0; ci < Math.min(row.length, 10); ci++) {
-          cols.push(ci + '="' + (row[ci] || '').substring(0, 30) + '"');
-        }
-        html += '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">Row ' + ri + ': ' + cols.join(' | ') + '</div>';
-      }
-      html += '<div style="color:var(--amber);margin-top:0.3rem;margin-bottom:0.3rem">Data rows (after header ' + cfg.headerRows + ') — first 3:</div>';
-      for (var ri = cfg.headerRows; ri < Math.min(cfg.headerRows + 3, rawRows.length); ri++) {
-        var row = rawRows[ri];
-        var cols = [];
-        for (var ci = 0; ci < Math.min(row.length, 10); ci++) {
-          cols.push(ci + '="' + (row[ci] || '').substring(0, 30) + '"');
-        }
-        html += '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">Row ' + ri + ': ' + cols.join(' | ') + '</div>';
-      }
-      html += '<div style="color:var(--amber);margin-top:0.3rem;margin-bottom:0.3rem">Last 3 rows:</div>';
-      for (var ri = Math.max(0, rawRows.length - 3); ri < rawRows.length; ri++) {
-        var row = rawRows[ri];
-        var cols = [];
-        for (var ci = 0; ci < Math.min(row.length, 10); ci++) {
-          cols.push(ci + '="' + (row[ci] || '').substring(0, 30) + '"');
-        }
-        html += '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">Row ' + ri + ': ' + cols.join(' | ') + '</div>';
-      }
-      html += '</div>';
-      
-      html += '</div>';
-    });
-  }
 
   body.innerHTML = html;
 
@@ -4718,9 +4660,11 @@ function generateProgressPDF() {
         try {
           var resp = JSON.parse(xhr.responseText);
           var text = resp.content.map(function(c){ return c.text || ''; }).join('\n');
-          // Deanonymize before displaying
           el.className = 'ai-result';
           el.textContent = deanonymize(text);
+          // Show print button
+          var printBtn = document.getElementById(resultElId.replace('ai-result-', 'ai-print-'));
+          if (printBtn) printBtn.style.display = 'inline-block';
         } catch(e) {
           el.className = 'ai-result';
           el.textContent = 'Error parsing response: ' + e.message;
@@ -4887,6 +4831,57 @@ function generateProgressPDF() {
     }
   });
 })();
+
+function printAiResult(resultElId, title) {
+  var el = document.getElementById(resultElId);
+  if (!el || !el.textContent.trim()) { alert('No AI output to print.'); return; }
+  if (typeof gtag === 'function') gtag('event', 'ai_print_pdf', { event_category: 'ai_usage', event_label: title });
+
+  var content = el.textContent;
+  var today = new Date();
+  var dateStr = today.getDate() + '-' + (today.getMonth()+1) + '-' + today.getFullYear();
+  var timeStr = today.toLocaleTimeString();
+
+  var printWin = window.open('', '_blank');
+  if (!printWin) { alert('Pop-up blocked. Please allow pop-ups.'); return; }
+
+  var html = '<!DOCTYPE html><html><head><title>Kavach AI Report - ' + title + '</title>';
+  html += '<style>';
+  html += '@page { size: A4; margin: 20mm; }';
+  html += 'body { font-family: "Courier New", monospace; background: #080A0E; color: #E5E7EB; margin: 0; padding: 24px; }';
+  html += '@media print { body { background: white; color: #111; } .hdr-bar { background: #8B5CF6 !important; } h1 { color: #111 !important; } h2 { color: #333 !important; } .sub { color: #666 !important; } .content { color: #222 !important; border-color: #ddd !important; background: #fafafa !important; } .footer { color: #999 !important; border-color: #ddd !important; } .print-btn { display: none !important; } .badge { background: #f3f0ff !important; border-color: #ddd !important; color: #6B46C1 !important; } }';
+  html += 'h1 { font-size: 20px; margin: 0; color: #A78BFA; }';
+  html += 'h2 { font-size: 16px; margin: 20px 0 8px; color: #C4B5FD; font-weight: 700; }';
+  html += '.sub { font-size: 11px; color: #9CA3AF; margin: 4px 0; }';
+  html += '.hdr-bar { height: 3px; background: linear-gradient(90deg, #8B5CF6, #A78BFA); margin: 16px 0; border: none; }';
+  html += '.badge { display: inline-block; font-size: 10px; color: #A78BFA; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); border-radius: 4px; padding: 3px 10px; margin-bottom: 16px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }';
+  html += '.content { font-family: "Courier New", monospace; font-size: 12px; line-height: 1.9; color: #E5E7EB; background: #0D1117; border: 1px solid #1F2937; border-radius: 8px; padding: 20px 24px; white-space: pre-wrap; word-wrap: break-word; margin: 16px 0; }';
+  html += '.footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #1F2937; font-size: 9px; color: #6B7280; display: flex; justify-content: space-between; }';
+  html += '.print-btn { display: block; margin: 24px auto; padding: 12px 40px; background: #8B5CF6; color: white; border: none; font-family: "Courier New", monospace; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase; }';
+  html += '.print-btn:hover { background: #A78BFA; }';
+  html += '</style></head><body>';
+
+  html += '<h1>KAVACH RFID \u2014 AI INSIGHTS</h1>';
+  html += '<div class="sub">Tag Verification System \u2014 HBL Engineering</div>';
+  html += '<hr class="hdr-bar"/>';
+
+  html += '<h2>' + title + '</h2>';
+  html += '<div class="sub">Generated: ' + dateStr + ' at ' + timeStr + '</div>';
+  html += '<div class="badge">AI-Powered Analysis \u00b7 Anonymized Data</div>';
+
+  html += '<div class="content">' + content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+
+  html += '<div class="footer">';
+  html += '<span>Kavach RFID Tag Verification \u2014 HBL Engineering</span>';
+  html += '<span>' + dateStr + '</span>';
+  html += '</div>';
+
+  html += '<button class="print-btn" onclick="window.print()">Save as PDF / Print</button>';
+  html += '</body></html>';
+
+  printWin.document.write(html);
+  printWin.document.close();
+}
 </script>
 </body>
 </html>
