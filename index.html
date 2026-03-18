@@ -2516,6 +2516,180 @@
   }
   .ai-anon-notice::before { content: '\uD83D\uDD12'; font-size: 1rem; }
 
+  /* ===== AI CHARTS ===== */
+  .ai-chart-card {
+    background: linear-gradient(135deg, rgba(139,92,246,0.04), rgba(5,6,10,0.9));
+    border: 1px solid rgba(139,92,246,0.2);
+    border-radius: 14px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    animation: chartCardIn 0.5s cubic-bezier(0.4,0,0.2,1) forwards;
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  @keyframes chartCardIn { to { opacity: 1; transform: translateY(0); } }
+  .ai-chart-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--neon), transparent);
+  }
+  .ai-chart-title {
+    font-family: var(--cond);
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--neon2);
+    margin-bottom: 1.25rem;
+    text-shadow: 0 0 8px rgba(139,92,246,0.3);
+  }
+  .ai-chart-subtitle {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  /* Bar chart */
+  .ai-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+    animation: barRowIn 0.4s ease forwards;
+    opacity: 0;
+  }
+  @keyframes barRowIn { to { opacity: 1; } }
+  .ai-bar-label {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    width: 140px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .ai-bar-track {
+    flex: 1;
+    height: 28px;
+    background: rgba(139,92,246,0.08);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(139,92,246,0.1);
+  }
+  .ai-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ai-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -50%; width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    animation: barSweep 2.5s ease-in-out infinite;
+  }
+  .ai-bar-fill-green { background: linear-gradient(90deg, #059669, #10B981); }
+  .ai-bar-fill-amber { background: linear-gradient(90deg, #D97706, #F59E0B); }
+  .ai-bar-fill-red { background: linear-gradient(90deg, #DC2626, #EF4444); }
+  .ai-bar-fill-purple { background: linear-gradient(90deg, #7C3AED, #A78BFA); }
+  .ai-bar-value {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+  }
+  .ai-bar-pct {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--neon);
+    width: 55px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* Donut mini charts */
+  .ai-donut-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+  .ai-donut-item {
+    text-align: center;
+    background: rgba(139,92,246,0.04);
+    border: 1px solid rgba(139,92,246,0.12);
+    border-radius: 12px;
+    padding: 1.25rem 0.75rem;
+    transition: all 0.3s;
+  }
+  .ai-donut-item:hover {
+    border-color: rgba(139,92,246,0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    transform: translateY(-2px);
+  }
+  .ai-mini-donut {
+    width: 90px; height: 90px;
+    margin: 0 auto 0.75rem;
+    position: relative;
+  }
+  .ai-mini-donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ai-mini-donut-track { fill: none; stroke: rgba(139,92,246,0.1); stroke-width: 8; }
+  .ai-mini-donut-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1); }
+  .ai-mini-donut-pct {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 1.1rem; font-weight: 800; color: var(--text);
+  }
+  .ai-donut-name { font-family: var(--mono); font-size: 0.8rem; font-weight: 700; color: var(--text); }
+  .ai-donut-sub { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+
+  /* Health scorecard */
+  .ai-health-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .ai-health-card {
+    background: rgba(5,6,10,0.6);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.3s;
+  }
+  .ai-health-card:hover { border-color: rgba(139,92,246,0.3); }
+  .ai-health-name { font-family: var(--mono); font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 0.75rem; }
+  .ai-health-row { display: flex; justify-content: space-between; margin-bottom: 0.4rem; }
+  .ai-health-label { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+  .ai-health-val { font-family: var(--mono); font-size: 0.8rem; font-weight: 700; }
+  .ai-health-grade {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 900;
+    padding: 0.2rem 0.75rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+  }
+  .grade-a { color: #10B981; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); }
+  .grade-b { color: #3B82F6; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); }
+  .grade-c { color: #F59E0B; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); }
+  .grade-d { color: #EF4444; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); }
+
   /* Example queries text */
   .ai-section .ai-examples {
     font-family: var(--mono);
@@ -2688,6 +2862,7 @@
         <button class="ai-tab active" data-aitab="summary">Summary</button>
         <button class="ai-tab" data-aitab="query">Ask Data</button>
         <button class="ai-tab" data-aitab="predict">Predictions</button>
+        <button class="ai-tab" data-aitab="charts">&#128202; Charts</button>
       </div>
     </div>
     <div class="ai-body" id="ai-body">
@@ -2733,6 +2908,20 @@
           </div>
           <div class="ai-result" id="ai-result-predict" style="display:none"></div>
           <button class="ai-action-btn ai-print-btn" id="ai-print-predict" style="display:none;margin-top:0.75rem" onclick="printAiResult('ai-result-predict','Prediction &amp; Recommendations')">&#128438; Print / Save PDF</button>
+        </div>
+
+        <!-- Charts Tab -->
+        <div class="ai-section" id="ai-tab-charts" style="display:none">
+          <div class="ai-section-title">AI-Powered Visual Analysis</div>
+          <div style="font-family:var(--mono);font-size:0.9rem;color:var(--text2);margin-bottom:1.25rem;line-height:1.7">AI analyses your data and generates charts locally. No images sent or received &mdash; fully anonymized.</div>
+          <div style="margin-bottom:1.25rem">
+            <button class="ai-action-btn" id="ai-btn-chart-overview">&#128202; Division Overview</button>
+            <button class="ai-action-btn" id="ai-btn-chart-compare">&#128203; Division Comparison</button>
+            <button class="ai-action-btn" id="ai-btn-chart-health">&#127973; Health Scorecard</button>
+          </div>
+          <div id="ai-chart-loading" style="display:none" class="ai-result loading">Generating chart data...</div>
+          <div id="ai-charts-container"></div>
+          <button class="ai-action-btn ai-print-btn" id="ai-print-charts" style="display:none;margin-top:0.75rem" onclick="printAiCharts()">&#128438; Print / Save PDF</button>
         </div>
       </div>
     </div>
@@ -4749,6 +4938,213 @@ function generateProgressPDF() {
     callClaude(prompt, 'ai-result-predict');
   }
 
+  // ── CHART FUNCTIONS ──
+  function callClaudeForCharts(prompt, callback) {
+    var loadEl = document.getElementById('ai-chart-loading');
+    loadEl.style.display = 'block';
+
+    var body = JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2000,
+      system: 'You are a data analyst. Return ONLY valid JSON, no markdown, no backticks, no explanation. Follow the exact JSON schema requested.',
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://api.anthropic.com/v1/messages', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('x-api-key', aiApiKey);
+    xhr.setRequestHeader('anthropic-version', '2023-06-01');
+    xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
+    xhr.onload = function() {
+      loadEl.style.display = 'none';
+      if (xhr.status === 200) {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          var text = resp.content.map(function(c){ return c.text || ''; }).join('');
+          // Strip markdown fences if present
+          text = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+          var chartData = JSON.parse(text);
+          callback(null, chartData);
+        } catch(e) {
+          console.error('[AI Charts] Parse error:', e, 'Raw:', text);
+          callback('Failed to parse chart data: ' + e.message, null);
+        }
+      } else {
+        callback('API Error: ' + xhr.status, null);
+      }
+    };
+    xhr.onerror = function() { loadEl.style.display = 'none'; callback('Network error', null); };
+    xhr.send(body);
+  }
+
+  function runChartOverview() {
+    if (typeof gtag === 'function') gtag('event', 'ai_chart_overview', { event_category: 'ai_usage' });
+    var p = getProgressDataSafe();
+    if (!p) { alert('Please open the Progress page first to load data.'); return; }
+    var data = buildAnonymizedDataString(p);
+    var prompt = 'Here is RFID tag verification progress data (names anonymized):\n\n' + data + '\n\nReturn a JSON object with this exact structure:\n{"divisions":[{"name":"Division-1","total":48,"completed":43,"pending":5,"pct":90}],"insight":"One sentence summary of overall status"}\nInclude ALL divisions. Calculate percentages. Return ONLY the JSON.';
+    callClaudeForCharts(prompt, function(err, chartData) {
+      if (err) { showChartError(err); return; }
+      renderOverviewChart(chartData);
+    });
+  }
+
+  function runChartCompare() {
+    if (typeof gtag === 'function') gtag('event', 'ai_chart_compare', { event_category: 'ai_usage' });
+    var p = getProgressDataSafe();
+    if (!p) { alert('Please open the Progress page first to load data.'); return; }
+    var data = buildAnonymizedDataString(p);
+    var prompt = 'Here is RFID tag verification progress data (names anonymized):\n\n' + data + '\n\nCompare all divisions and return JSON with this exact structure:\n{"rankings":[{"rank":1,"name":"Division-1","pct":90,"total":48,"completed":43,"status":"excellent"}],"best":"Division name with highest %","worst":"Division name with lowest %","avgPct":75,"insight":"Brief comparison insight"}\nSort by pct descending. status must be one of: excellent (>85%), good (70-85%), moderate (50-70%), critical (<50%). Return ONLY the JSON.';
+    callClaudeForCharts(prompt, function(err, chartData) {
+      if (err) { showChartError(err); return; }
+      renderCompareChart(chartData);
+    });
+  }
+
+  function runChartHealth() {
+    if (typeof gtag === 'function') gtag('event', 'ai_chart_health', { event_category: 'ai_usage' });
+    var p = getProgressDataSafe();
+    if (!p) { alert('Please open the Progress page first to load data.'); return; }
+    var data = buildAnonymizedDataString(p);
+    var prompt = 'Here is RFID tag verification progress data (names anonymized):\n\n' + data + '\n\nAnalyze health of each division. Return JSON:\n{"cards":[{"name":"Division-1","grade":"A","pct":90,"total":48,"completed":43,"pending":5,"hasDates":true,"riskLevel":"low","recommendation":"Brief action item"}],"overall_grade":"B","summary":"Overall project health summary"}\nGrade: A (>90%), B (75-90%), C (50-75%), D (<50%). riskLevel: low/medium/high/critical. Return ONLY the JSON.';
+    callClaudeForCharts(prompt, function(err, chartData) {
+      if (err) { showChartError(err); return; }
+      renderHealthChart(chartData);
+    });
+  }
+
+  function showChartError(msg) {
+    var container = document.getElementById('ai-charts-container');
+    container.innerHTML = '<div class="ai-result" style="color:var(--red)">' + msg + '</div>';
+  }
+
+  function renderOverviewChart(data) {
+    var container = document.getElementById('ai-charts-container');
+    var divs = data.divisions || [];
+    var html = '';
+
+    // Bar chart card
+    html += '<div class="ai-chart-card" style="animation-delay:0s">';
+    html += '<div class="ai-chart-title">Division Completion Overview</div>';
+    if (data.insight) html += '<div class="ai-chart-subtitle">' + deanonymize(data.insight) + '</div>';
+
+    divs.forEach(function(d, i) {
+      var name = deanonymize(d.name);
+      var pct = d.pct || 0;
+      var colorClass = pct >= 85 ? 'ai-bar-fill-green' : pct >= 60 ? 'ai-bar-fill-amber' : 'ai-bar-fill-red';
+      html += '<div class="ai-bar-row" style="animation-delay:' + (i * 0.08) + 's">';
+      html += '<div class="ai-bar-label">' + name + '</div>';
+      html += '<div class="ai-bar-track"><div class="ai-bar-fill ' + colorClass + '" style="width:0%" data-target="' + pct + '"><span class="ai-bar-value">' + d.completed + '/' + d.total + '</span></div></div>';
+      html += '<div class="ai-bar-pct">' + pct + '%</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Donut grid card
+    html += '<div class="ai-chart-card" style="animation-delay:0.3s">';
+    html += '<div class="ai-chart-title">Per-Division Completion Donuts</div>';
+    html += '<div class="ai-donut-grid">';
+    divs.forEach(function(d) {
+      var name = deanonymize(d.name);
+      var pct = d.pct || 0;
+      var r = 35; var circ = 2 * Math.PI * r;
+      var color = pct >= 85 ? '#10B981' : pct >= 60 ? '#F59E0B' : '#EF4444';
+      html += '<div class="ai-donut-item">';
+      html += '<div class="ai-mini-donut"><svg viewBox="0 0 80 80"><circle class="ai-mini-donut-track" cx="40" cy="40" r="' + r + '"/><circle class="ai-mini-donut-fill" cx="40" cy="40" r="' + r + '" stroke="' + color + '" stroke-dasharray="' + circ + '" stroke-dashoffset="' + circ + '" data-target="' + (circ - (pct/100)*circ) + '"/></svg><div class="ai-mini-donut-pct">' + pct + '%</div></div>';
+      html += '<div class="ai-donut-name">' + name + '</div>';
+      html += '<div class="ai-donut-sub">' + d.completed + ' of ' + d.total + '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+
+    container.innerHTML = html;
+    animateCharts();
+    document.getElementById('ai-print-charts').style.display = 'inline-block';
+  }
+
+  function renderCompareChart(data) {
+    var container = document.getElementById('ai-charts-container');
+    var ranks = data.rankings || [];
+    var html = '';
+
+    html += '<div class="ai-chart-card" style="animation-delay:0s">';
+    html += '<div class="ai-chart-title">Division Rankings by Completion</div>';
+    if (data.insight) html += '<div class="ai-chart-subtitle">' + deanonymize(data.insight) + '</div>';
+
+    ranks.forEach(function(d, i) {
+      var name = deanonymize(d.name);
+      var pct = d.pct || 0;
+      var statusColors = { excellent: 'ai-bar-fill-green', good: 'ai-bar-fill-green', moderate: 'ai-bar-fill-amber', critical: 'ai-bar-fill-red' };
+      var colorClass = statusColors[d.status] || 'ai-bar-fill-purple';
+      html += '<div class="ai-bar-row" style="animation-delay:' + (i * 0.1) + 's">';
+      html += '<div class="ai-bar-label" style="display:flex;align-items:center;gap:0.5rem;justify-content:flex-end"><span style="font-size:1.2rem;font-weight:900;color:var(--neon)">#' + d.rank + '</span> ' + name + '</div>';
+      html += '<div class="ai-bar-track"><div class="ai-bar-fill ' + colorClass + '" style="width:0%" data-target="' + pct + '"><span class="ai-bar-value">' + d.completed + '/' + d.total + ' \u2014 ' + (d.status || '').toUpperCase() + '</span></div></div>';
+      html += '<div class="ai-bar-pct">' + pct + '%</div>';
+      html += '</div>';
+    });
+
+    // Summary stats
+    html += '<div style="display:flex;gap:1.5rem;margin-top:1.5rem;flex-wrap:wrap">';
+    if (data.best) html += '<div style="font-family:var(--mono);font-size:0.85rem"><span style="color:var(--green);font-weight:800">BEST:</span> <span style="color:var(--text)">' + deanonymize(data.best) + '</span></div>';
+    if (data.worst) html += '<div style="font-family:var(--mono);font-size:0.85rem"><span style="color:var(--red);font-weight:800">NEEDS ATTENTION:</span> <span style="color:var(--text)">' + deanonymize(data.worst) + '</span></div>';
+    if (data.avgPct) html += '<div style="font-family:var(--mono);font-size:0.85rem"><span style="color:var(--neon);font-weight:800">AVERAGE:</span> <span style="color:var(--text)">' + data.avgPct + '%</span></div>';
+    html += '</div>';
+    html += '</div>';
+
+    container.innerHTML = html;
+    animateCharts();
+    document.getElementById('ai-print-charts').style.display = 'inline-block';
+  }
+
+  function renderHealthChart(data) {
+    var container = document.getElementById('ai-charts-container');
+    var cards = data.cards || [];
+    var html = '';
+
+    // Overall header
+    html += '<div class="ai-chart-card" style="animation-delay:0s">';
+    html += '<div class="ai-chart-title">Project Health Scorecard</div>';
+    if (data.summary) html += '<div class="ai-chart-subtitle">' + deanonymize(data.summary) + '</div>';
+    if (data.overall_grade) {
+      var gradeClass = data.overall_grade === 'A' ? 'grade-a' : data.overall_grade === 'B' ? 'grade-b' : data.overall_grade === 'C' ? 'grade-c' : 'grade-d';
+      html += '<div style="text-align:center;margin:1rem 0"><span class="ai-health-grade ' + gradeClass + '">Overall: ' + data.overall_grade + '</span></div>';
+    }
+    html += '</div>';
+
+    // Division cards
+    html += '<div class="ai-health-grid">';
+    cards.forEach(function(card, i) {
+      var name = deanonymize(card.name);
+      var gradeClass = card.grade === 'A' ? 'grade-a' : card.grade === 'B' ? 'grade-b' : card.grade === 'C' ? 'grade-c' : 'grade-d';
+      var riskColors = { low: 'var(--green)', medium: 'var(--amber)', high: 'var(--red)', critical: '#FF0000' };
+      html += '<div class="ai-health-card" style="animation-delay:' + (i * 0.08) + 's">';
+      html += '<div class="ai-health-name">' + name + ' <span class="ai-health-grade ' + gradeClass + '" style="font-size:1rem;padding:0.1rem 0.5rem;vertical-align:middle">' + card.grade + '</span></div>';
+      html += '<div class="ai-health-row"><span class="ai-health-label">Completion</span><span class="ai-health-val" style="color:var(--neon)">' + card.pct + '%</span></div>';
+      html += '<div class="ai-health-row"><span class="ai-health-label">Sections</span><span class="ai-health-val">' + card.completed + '/' + card.total + '</span></div>';
+      html += '<div class="ai-health-row"><span class="ai-health-label">Pending</span><span class="ai-health-val" style="color:var(--red)">' + card.pending + '</span></div>';
+      html += '<div class="ai-health-row"><span class="ai-health-label">Risk</span><span class="ai-health-val" style="color:' + (riskColors[card.riskLevel] || 'var(--muted)') + '">' + (card.riskLevel || 'unknown').toUpperCase() + '</span></div>';
+      if (card.recommendation) html += '<div style="font-family:var(--mono);font-size:0.75rem;color:var(--text2);margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border)">' + deanonymize(card.recommendation) + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+    document.getElementById('ai-print-charts').style.display = 'inline-block';
+  }
+
+  function animateCharts() {
+    // Animate bar fills
+    setTimeout(function() {
+      document.querySelectorAll('.ai-bar-fill[data-target]').forEach(function(bar) {
+        bar.style.width = bar.dataset.target + '%';
+      });
+      document.querySelectorAll('.ai-mini-donut-fill[data-target]').forEach(function(arc) {
+        arc.setAttribute('stroke-dashoffset', arc.dataset.target);
+      });
+    }, 200);
+  }
+
   // ── WIRING ──
   document.addEventListener('DOMContentLoaded', function() {
     var screenAi = document.getElementById('screen-ai');
@@ -4814,6 +5210,15 @@ function generateProgressPDF() {
     if (btnAnomaly) btnAnomaly.addEventListener('click', runAnomaly);
     if (btnPredict) btnPredict.addEventListener('click', runPredict);
     if (btnPriority) btnPriority.addEventListener('click', runPriority);
+
+    // Chart buttons
+    var btnChartOverview = document.getElementById('ai-btn-chart-overview');
+    var btnChartCompare = document.getElementById('ai-btn-chart-compare');
+    var btnChartHealth = document.getElementById('ai-btn-chart-health');
+    if (btnChartOverview) btnChartOverview.addEventListener('click', runChartOverview);
+    if (btnChartCompare) btnChartCompare.addEventListener('click', runChartCompare);
+    if (btnChartHealth) btnChartHealth.addEventListener('click', runChartHealth);
+
     if (querySend) {
       querySend.addEventListener('click', function() {
         var q = queryInput.value.trim();
@@ -4876,6 +5281,70 @@ function printAiResult(resultElId, title) {
   html += '<span>' + dateStr + '</span>';
   html += '</div>';
 
+  html += '<button class="print-btn" onclick="window.print()">Save as PDF / Print</button>';
+  html += '</body></html>';
+
+  printWin.document.write(html);
+  printWin.document.close();
+}
+
+function printAiCharts() {
+  var container = document.getElementById('ai-charts-container');
+  if (!container || !container.innerHTML.trim()) { alert('No charts to print. Generate a chart first.'); return; }
+  if (typeof gtag === 'function') gtag('event', 'ai_print_charts', { event_category: 'ai_usage' });
+
+  var today = new Date();
+  var dateStr = today.getDate() + '-' + (today.getMonth()+1) + '-' + today.getFullYear();
+
+  var printWin = window.open('', '_blank');
+  if (!printWin) { alert('Pop-up blocked.'); return; }
+
+  var html = '<!DOCTYPE html><html><head><title>Kavach AI Charts</title>';
+  html += '<style>';
+  html += '@page { size: A4; margin: 15mm; }';
+  html += 'body { font-family: "Courier New", monospace; margin: 0; padding: 20px; background: #080A0E; color: #E5E7EB; }';
+  html += '@media print { body { background: white; color: #111; } .print-btn { display:none !important; } .ai-chart-card { border-color: #ddd !important; background: #fafafa !important; } .ai-chart-title { color: #333 !important; } .ai-bar-label,.ai-bar-pct,.ai-donut-name,.ai-health-name { color: #111 !important; } .ai-mini-donut-pct { color: #333 !important; } .ai-chart-subtitle,.ai-donut-sub,.ai-health-label { color: #666 !important; } .ai-health-val { color: #333 !important; } }';
+  // Copy essential chart styles
+  html += '.ai-chart-card { border: 1px solid rgba(139,92,246,0.2); border-radius: 14px; padding: 1.75rem; margin-bottom: 1.5rem; background: rgba(139,92,246,0.03); page-break-inside: avoid; }';
+  html += '.ai-chart-card::before { display:none; }';
+  html += '.ai-chart-title { font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #A78BFA; margin-bottom: 1rem; }';
+  html += '.ai-chart-subtitle { font-size: 12px; color: #9CA3AF; margin-bottom: 1rem; }';
+  html += '.ai-bar-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }';
+  html += '.ai-bar-label { font-size: 12px; font-weight: 700; color: #E5E7EB; width: 140px; flex-shrink: 0; text-align: right; }';
+  html += '.ai-bar-track { flex: 1; height: 24px; background: rgba(139,92,246,0.08); border-radius: 6px; overflow: hidden; }';
+  html += '.ai-bar-fill { height: 100%; border-radius: 5px; display: flex; align-items: center; padding-left: 8px; }';
+  html += '.ai-bar-fill::after { display:none; }';
+  html += '.ai-bar-fill-green { background: linear-gradient(90deg, #059669, #10B981); }';
+  html += '.ai-bar-fill-amber { background: linear-gradient(90deg, #D97706, #F59E0B); }';
+  html += '.ai-bar-fill-red { background: linear-gradient(90deg, #DC2626, #EF4444); }';
+  html += '.ai-bar-fill-purple { background: linear-gradient(90deg, #7C3AED, #A78BFA); }';
+  html += '.ai-bar-value { font-size: 11px; font-weight: 800; color: white; }';
+  html += '.ai-bar-pct { font-size: 12px; font-weight: 800; color: #A78BFA; width: 55px; text-align: right; }';
+  html += '.ai-donut-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }';
+  html += '.ai-donut-item { text-align: center; border: 1px solid rgba(139,92,246,0.12); border-radius: 12px; padding: 1rem; }';
+  html += '.ai-mini-donut { width: 80px; height: 80px; margin: 0 auto 0.5rem; position: relative; }';
+  html += '.ai-mini-donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }';
+  html += '.ai-mini-donut-track { fill: none; stroke: rgba(139,92,246,0.1); stroke-width: 8; }';
+  html += '.ai-mini-donut-fill { fill: none; stroke-width: 8; stroke-linecap: round; }';
+  html += '.ai-mini-donut-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #E5E7EB; }';
+  html += '.ai-donut-name { font-size: 11px; font-weight: 700; color: #E5E7EB; }';
+  html += '.ai-donut-sub { font-size: 10px; color: #9CA3AF; }';
+  html += '.ai-health-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }';
+  html += '.ai-health-card { border: 1px solid #1F2937; border-radius: 12px; padding: 1.25rem; page-break-inside: avoid; }';
+  html += '.ai-health-name { font-size: 14px; font-weight: 800; margin-bottom: 0.75rem; }';
+  html += '.ai-health-row { display: flex; justify-content: space-between; margin-bottom: 0.3rem; font-size: 11px; }';
+  html += '.ai-health-label { color: #9CA3AF; } .ai-health-val { font-weight: 700; }';
+  html += '.ai-health-grade { display: inline-block; font-size: 18px; font-weight: 900; padding: 0.2rem 0.75rem; border-radius: 6px; }';
+  html += '.grade-a { color: #10B981; background: rgba(16,185,129,0.1); } .grade-b { color: #3B82F6; background: rgba(59,130,246,0.1); } .grade-c { color: #F59E0B; background: rgba(245,158,11,0.1); } .grade-d { color: #EF4444; background: rgba(239,68,68,0.1); }';
+  html += '.hdr-bar { height: 3px; background: linear-gradient(90deg, #8B5CF6, #A78BFA); margin: 12px 0 16px; border: none; }';
+  html += '.footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #1F2937; font-size: 9px; color: #6B7280; display: flex; justify-content: space-between; }';
+  html += '.print-btn { display: block; margin: 20px auto; padding: 12px 40px; background: #8B5CF6; color: white; border: none; font-family: "Courier New",monospace; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.1em; }';
+  html += '</style></head><body>';
+  html += '<div style="font-size:20px;font-weight:800;color:#A78BFA">KAVACH RFID \u2014 AI VISUAL ANALYSIS</div>';
+  html += '<div style="font-size:11px;color:#9CA3AF">Tag Verification System \u2014 HBL Engineering \u00b7 Generated: ' + dateStr + '</div>';
+  html += '<hr class="hdr-bar"/>';
+  html += container.innerHTML;
+  html += '<div class="footer"><span>Kavach RFID \u2014 HBL Engineering</span><span>' + dateStr + '</span></div>';
   html += '<button class="print-btn" onclick="window.print()">Save as PDF / Print</button>';
   html += '</body></html>';
 
