@@ -4,6 +4,14 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Kavach RFID — Tag Verification System</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-EKNGWPJ2JX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-EKNGWPJ2JX');
+</script>
 <style>
   /* Offline-safe system font stack — replaces Google Fonts */
   @font-face { font-family: 'Share Tech Mono'; src: local('Courier New'), local('Courier'); }
@@ -2780,6 +2788,7 @@ fileInput.addEventListener('change', function() {
 
 function handleFiles(files) {
   console.log('handleFiles:', files.length);
+  if (typeof gtag === 'function') gtag('event', 'file_upload', { event_category: 'engagement', value: files.length });
   var xlsxFiles = files.filter(function(f) { return f.name.match(/\.xlsx?$/i); });
   console.log('xlsx files:', xlsxFiles.map(function(f){return f.name;}));
   if (!xlsxFiles.length) { alert('No .xlsx files selected.'); return; }
@@ -3103,6 +3112,7 @@ function mergeSheets(sections, sheetKey) {
 }
 
 function openDetail(d) {
+  if (typeof gtag === 'function') gtag('event', 'view_section', { event_category: 'engagement', event_label: d.section });
   currentDetail = d;
   currentPage   = 0;
   currentFilter = 'all';
@@ -4212,6 +4222,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var screenP  = document.getElementById('screen-progress');
 
   function openProgressScreen() {
+    if (typeof gtag === 'function') gtag('event', 'view_progress', { event_category: 'engagement' });
     renderProgressPage();
     screenP.classList.add('visible');
     startProgressCanvas();
@@ -4315,6 +4326,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function generateProgressPDF() {
+  if (typeof gtag === 'function') gtag('event', 'download_pdf', { event_category: 'engagement' });
   var p = getProgressFromSheet(gsheetCache);
   var today = new Date();
   var dateStr2 = today.getDate() + '-' + (today.getMonth()+1) + '-' + today.getFullYear();
@@ -4739,6 +4751,7 @@ function generateProgressPDF() {
   }
 
   function runSummary() {
+    if (typeof gtag === 'function') gtag('event', 'ai_summary', { event_category: 'ai_usage' });
     var p = getProgressDataSafe();
     if (!p) { alert('Please open the Progress page first to load data.'); return; }
     var data = buildAnonymizedDataString(p);
@@ -4747,6 +4760,7 @@ function generateProgressPDF() {
   }
 
   function runAnomaly() {
+    if (typeof gtag === 'function') gtag('event', 'ai_anomaly', { event_category: 'ai_usage' });
     var p = getProgressDataSafe();
     if (!p) { alert('Please open the Progress page first to load data.'); return; }
     var data = buildAnonymizedDataString(p);
@@ -4755,6 +4769,7 @@ function generateProgressPDF() {
   }
 
   function runQuery(question) {
+    if (typeof gtag === 'function') gtag('event', 'ai_query', { event_category: 'ai_usage' });
     // Validate query before sending
     var check = validateQuery(question);
     if (!check.valid) {
@@ -4773,6 +4788,7 @@ function generateProgressPDF() {
   }
 
   function runPredict() {
+    if (typeof gtag === 'function') gtag('event', 'ai_predict', { event_category: 'ai_usage' });
     var p = getProgressDataSafe();
     if (!p) { alert('Please open the Progress page first to load data.'); return; }
     var data = buildAnonymizedDataString(p);
@@ -4781,6 +4797,7 @@ function generateProgressPDF() {
   }
 
   function runPriority() {
+    if (typeof gtag === 'function') gtag('event', 'ai_priority', { event_category: 'ai_usage' });
     var p = getProgressDataSafe();
     if (!p) { alert('Please open the Progress page first to load data.'); return; }
     var data = buildAnonymizedDataString(p);
