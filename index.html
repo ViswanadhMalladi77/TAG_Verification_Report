@@ -1501,6 +1501,52 @@
   }
   #screen-progress.visible { transform: translateX(0); }
 
+  /* Animated mesh background for progress screen */
+  .progress-bg-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  /* Floating orbs */
+  .progress-orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(60px);
+    animation: orbFloat 12s ease-in-out infinite;
+  }
+  .progress-orb--1 {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%);
+    top: 5%; left: -5%;
+    animation-delay: 0s;
+    animation-duration: 14s;
+  }
+  .progress-orb--2 {
+    width: 250px; height: 250px;
+    background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%);
+    top: 40%; right: -3%;
+    animation-delay: -4s;
+    animation-duration: 16s;
+  }
+  .progress-orb--3 {
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+    bottom: 10%; left: 30%;
+    animation-delay: -8s;
+    animation-duration: 18s;
+  }
+  @keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, -20px) scale(1.1); }
+    50% { transform: translate(-20px, 30px) scale(0.95); }
+    75% { transform: translate(15px, 15px) scale(1.05); }
+  }
+
   .progress-header {
     height: 64px;
     background: rgba(8,10,14,0.95);
@@ -1511,6 +1557,24 @@
     padding: 0 2rem;
     gap: 1rem;
     flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+  /* Animated glow line under header */
+  .progress-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--amber) 30%, var(--green) 50%, var(--amber) 70%, transparent 100%);
+    background-size: 200% 100%;
+    animation: headerGlowSlide 4s linear infinite;
+    opacity: 0.6;
+  }
+  @keyframes headerGlowSlide {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
   .progress-page-title {
     font-family: var(--cond);
@@ -1537,6 +1601,8 @@
     padding: 2rem;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
+    position: relative;
+    z-index: 1;
   }
   .progress-body::-webkit-scrollbar { width: 4px; }
   .progress-body::-webkit-scrollbar-track { background: transparent; }
@@ -1549,6 +1615,11 @@
     margin-bottom: 2.5rem;
     align-items: center;
     flex-wrap: wrap;
+    animation: progressFadeIn 0.7s ease forwards;
+  }
+  @keyframes progressFadeIn {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   /* Donut chart container */
@@ -1558,10 +1629,39 @@
     height: 220px;
     flex-shrink: 0;
   }
+  /* Outer glow ring */
+  .donut-container::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(245,158,11,0.08), rgba(16,185,129,0.06), rgba(59,130,246,0.04), rgba(245,158,11,0.08));
+    animation: donutRingRotate 10s linear infinite;
+    filter: blur(4px);
+  }
+  /* Inner ring glow */
+  .donut-container::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 1px solid rgba(245,158,11,0.1);
+    animation: donutPulseRing 3s ease-in-out infinite;
+  }
+  @keyframes donutRingRotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  @keyframes donutPulseRing {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.02); }
+  }
   .donut-svg {
     width: 100%;
     height: 100%;
     transform: rotate(-90deg);
+    position: relative;
+    z-index: 1;
   }
   .donut-track {
     fill: none;
@@ -1573,16 +1673,16 @@
     stroke: var(--amber);
     stroke-width: 18;
     stroke-linecap: round;
-    transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
-    filter: drop-shadow(0 0 6px rgba(245,158,11,0.4));
+    transition: stroke-dashoffset 1.8s cubic-bezier(0.4,0,0.2,1);
+    filter: drop-shadow(0 0 10px rgba(245,158,11,0.5));
   }
   .donut-fill-green {
     fill: none;
     stroke: var(--green);
     stroke-width: 18;
     stroke-linecap: round;
-    transition: stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
-    filter: drop-shadow(0 0 6px rgba(16,185,129,0.4));
+    transition: stroke-dashoffset 1.8s cubic-bezier(0.4,0,0.2,1);
+    filter: drop-shadow(0 0 10px rgba(16,185,129,0.5));
   }
   .donut-center {
     position: absolute;
@@ -1591,6 +1691,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    z-index: 2;
   }
   .donut-pct {
     font-family: var(--mono);
@@ -1598,6 +1699,7 @@
     font-weight: 700;
     color: var(--amber);
     line-height: 1;
+    text-shadow: 0 0 30px rgba(245,158,11,0.4), 0 0 60px rgba(245,158,11,0.15);
   }
   .donut-pct-label {
     font-family: var(--mono);
@@ -1624,7 +1726,35 @@
     padding: 1.25rem;
     position: relative;
     overflow: hidden;
+    transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+    animation: kpiSlideIn 0.6s ease forwards;
+    opacity: 0;
+    transform: translateY(16px);
   }
+  .progress-kpi:nth-child(1) { animation-delay: 0.15s; }
+  .progress-kpi:nth-child(2) { animation-delay: 0.25s; }
+  .progress-kpi:nth-child(3) { animation-delay: 0.35s; }
+  .progress-kpi:nth-child(4) { animation-delay: 0.45s; }
+  @keyframes kpiSlideIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .progress-kpi:hover {
+    transform: translateY(-3px) !important;
+    border-color: rgba(245,158,11,0.25);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(245,158,11,0.08);
+  }
+  /* Subtle radial gradient on hover */
+  .progress-kpi::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at center, rgba(245,158,11,0.04) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+  .progress-kpi:hover::before { opacity: 1; }
   .progress-kpi::after {
     content: '';
     position: absolute;
@@ -1649,6 +1779,7 @@
     font-size: 2.5rem;
     font-weight: 700;
     line-height: 1;
+    transition: text-shadow 0.3s ease;
   }
   .pk-sub {
     font-family: var(--mono);
@@ -1657,10 +1788,12 @@
     color: var(--muted);
     margin-top: 0.35rem;
   }
-  .pk-amber .pk-value { color: var(--amber); }
-  .pk-green .pk-value { color: var(--green); }
-  .pk-red   .pk-value { color: var(--red); }
-  .pk-blue  .pk-value { color: var(--blue); }
+  .pk-amber .pk-value { color: var(--amber); text-shadow: 0 0 20px rgba(245,158,11,0.25); }
+  .pk-green .pk-value { color: var(--green); text-shadow: 0 0 20px rgba(16,185,129,0.25); }
+  .pk-red   .pk-value { color: var(--red); text-shadow: 0 0 20px rgba(239,68,68,0.25); }
+  .pk-blue  .pk-value { color: var(--blue); text-shadow: 0 0 20px rgba(59,130,246,0.25); }
+  .progress-kpi:hover .pk-amber.pk-value,
+  .pk-amber:hover .pk-value { text-shadow: 0 0 30px rgba(245,158,11,0.5); }
 
   /* Section list */
   .progress-section-title {
@@ -1674,6 +1807,21 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    position: relative;
+  }
+  .progress-section-title::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--amber);
+    border-radius: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 0 10px rgba(245,158,11,0.5);
+    animation: sectionDotPulse 2s ease-in-out infinite;
+  }
+  @keyframes sectionDotPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(245,158,11,0.3); }
+    50% { box-shadow: 0 0 14px rgba(245,158,11,0.7); }
   }
   .progress-section-title::after {
     content: '';
@@ -1697,13 +1845,25 @@
     padding: 0.4rem 1rem;
     border-radius: 5px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
   }
-  .pf-tab.pf-active-all     { border-color: var(--blue);  color: var(--blue);  background: rgba(59,130,246,0.1); }
-  .pf-tab.pf-active-done    { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); }
-  .pf-tab.pf-active-pending { border-color: var(--red);   color: var(--red);   background: rgba(239,68,68,0.1); }
+  .pf-tab::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .pf-tab:hover::before { opacity: 1; }
+  .pf-tab:hover { transform: translateY(-1px); }
+  .pf-tab.pf-active-all     { border-color: var(--blue);  color: var(--blue);  background: rgba(59,130,246,0.1); box-shadow: 0 0 12px rgba(59,130,246,0.15); }
+  .pf-tab.pf-active-done    { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); box-shadow: 0 0 12px rgba(16,185,129,0.15); }
+  .pf-tab.pf-active-pending { border-color: var(--red);   color: var(--red);   background: rgba(239,68,68,0.1); box-shadow: 0 0 12px rgba(239,68,68,0.15); }
 
   .progress-list {
     display: grid;
@@ -1718,22 +1878,52 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 0.85rem 1.2rem;
-    transition: all 0.25s ease;
-    animation: fadeUp 0.4s ease forwards;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    animation: progressItemIn 0.5s ease forwards;
     opacity: 0;
+    transform: translateX(-12px);
+    position: relative;
+    overflow: hidden;
+  }
+  @keyframes progressItemIn {
+    to { opacity: 1; transform: translateX(0); }
+  }
+  /* Hover glow line on left */
+  .progress-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: transparent;
+    transition: all 0.3s ease;
+    border-radius: 2px;
   }
   .progress-item:hover {
-    border-color: rgba(245,158,11,0.2);
-    background: rgba(245,158,11,0.02);
+    border-color: rgba(245,158,11,0.25);
+    background: rgba(245,158,11,0.025);
+    transform: translateX(4px);
   }
+  .pi-done:hover::before   { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .pi-partial:hover::before { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .pi-pending:hover::before { background: var(--red); box-shadow: 0 0 8px rgba(239,68,68,0.5); }
   .progress-item-status {
     width: 12px; height: 12px;
     border-radius: 50%;
     flex-shrink: 0;
+    transition: transform 0.3s ease;
   }
-  .pi-done   .progress-item-status { background: var(--green); box-shadow: 0 0 8px rgba(16,185,129,0.5); }
-  .pi-partial .progress-item-status { background: var(--amber); box-shadow: 0 0 8px rgba(245,158,11,0.5); }
+  .progress-item:hover .progress-item-status { transform: scale(1.3); }
+  .pi-done   .progress-item-status { background: var(--green); box-shadow: 0 0 8px rgba(16,185,129,0.5); animation: statusGlowGreen 2.5s ease-in-out infinite; }
+  .pi-partial .progress-item-status { background: var(--amber); box-shadow: 0 0 8px rgba(245,158,11,0.5); animation: statusGlowAmber 2s ease-in-out infinite; }
   .pi-pending .progress-item-status { background: var(--red); opacity: 0.5; }
+  @keyframes statusGlowGreen {
+    0%, 100% { box-shadow: 0 0 6px rgba(16,185,129,0.3); }
+    50% { box-shadow: 0 0 14px rgba(16,185,129,0.7); }
+  }
+  @keyframes statusGlowAmber {
+    0%, 100% { box-shadow: 0 0 6px rgba(245,158,11,0.3); }
+    50% { box-shadow: 0 0 14px rgba(245,158,11,0.7); }
+  }
   .progress-item-name {
     font-family: var(--mono);
     font-size: 0.9rem;
@@ -1752,7 +1942,9 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     flex-shrink: 0;
+    transition: all 0.3s ease;
   }
+  .progress-item:hover .progress-item-badge { transform: scale(1.05); }
   .pi-done .progress-item-badge {
     background: rgba(16,185,129,0.12);
     color: #34D399;
@@ -1769,10 +1961,64 @@
     border: 1px solid rgba(239,68,68,0.15);
     opacity: 0.7;
   }
-  .pf-tab.pf-active-partial { border-color: var(--amber); color: var(--amber); background: rgba(245,158,11,0.1); }
-  .pf-tab.pf-active-complete { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); }
-  .pf-tab.pf-active-completed { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); }
-  .pf-tab.pf-active-in-progress { border-color: var(--amber); color: var(--amber); background: rgba(245,158,11,0.1); }
+  .pf-tab.pf-active-partial { border-color: var(--amber); color: var(--amber); background: rgba(245,158,11,0.1); box-shadow: 0 0 12px rgba(245,158,11,0.15); }
+  .pf-tab.pf-active-complete { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); box-shadow: 0 0 12px rgba(16,185,129,0.15); }
+  .pf-tab.pf-active-completed { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.1); box-shadow: 0 0 12px rgba(16,185,129,0.15); }
+  .pf-tab.pf-active-in-progress { border-color: var(--amber); color: var(--amber); background: rgba(245,158,11,0.1); box-shadow: 0 0 12px rgba(245,158,11,0.15); }
+
+  /* Division summary card enhancements */
+  .div-summary-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+    overflow: hidden;
+    animation: divCardIn 0.5s ease forwards;
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  @keyframes divCardIn {
+    to { opacity: 1; transform: scale(1); }
+  }
+  .div-summary-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(245,158,11,0.04) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .div-summary-card:hover::before { opacity: 1; }
+  .div-summary-card:hover {
+    border-color: rgba(245,158,11,0.4);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 0 24px rgba(245,158,11,0.08);
+  }
+  .div-summary-card:active { transform: translateY(-2px) scale(0.99); }
+
+  /* Progress bar shimmer effect */
+  .progress-bar-container {
+    position: relative;
+    height: 8px;
+    background: var(--bg4);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-bar-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%);
+    animation: barShimmer 2.5s ease-in-out infinite;
+    border-radius: 4px;
+  }
+  @keyframes barShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
 
   /* Download PDF button */
   .download-pdf-btn {
@@ -1812,6 +2058,239 @@
     .progress-kpis { min-width: unset; width: 100%; }
     .progress-list { grid-template-columns: 1fr; }
   }
+
+  /* ===== AI PANEL ===== */
+  .ai-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, rgba(139,92,246,0.12), rgba(139,92,246,0.22));
+    border: 1px solid rgba(139,92,246,0.35);
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    animation: aiBtnPulse 3s ease-in-out infinite;
+  }
+  .ai-btn:hover {
+    border-color: #A78BFA;
+    background: rgba(139,92,246,0.25);
+    box-shadow: 0 0 20px rgba(139,92,246,0.2);
+    transform: translateY(-1px);
+  }
+  @keyframes aiBtnPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.15); }
+    50% { box-shadow: 0 0 0 6px rgba(139,92,246,0); }
+  }
+  .ai-btn-icon { font-size: 1rem; }
+  .ai-btn-label {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #A78BFA;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  #screen-ai {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 300;
+    background: var(--bg);
+    transform: translateX(100%);
+    transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-top: 28px;
+  }
+  #screen-ai.visible { transform: translateX(0); }
+
+  .ai-header {
+    height: 64px;
+    background: var(--bg);
+    border-bottom: 1px solid rgba(139,92,246,0.2);
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+  .ai-title { font-family: var(--cond); font-size: 1.4rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text); }
+  .ai-title span { color: #A78BFA; }
+  .ai-subtitle { font-family: var(--mono); font-size: 0.7rem; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+
+  .ai-tabs {
+    display: flex;
+    gap: 0.4rem;
+    margin-left: auto;
+  }
+  .ai-tab {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.35rem 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .ai-tab.active {
+    background: rgba(139,92,246,0.12);
+    border-color: rgba(139,92,246,0.4);
+    color: #A78BFA;
+  }
+  .ai-tab:hover:not(.active) { border-color: rgba(255,255,255,0.15); color: var(--text2); }
+
+  .ai-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .ai-key-input-wrap {
+    background: var(--bg2);
+    border: 1px solid rgba(139,92,246,0.2);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  .ai-key-input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text);
+    width: 100%;
+    max-width: 450px;
+    outline: none;
+    margin: 0.75rem 0;
+    letter-spacing: 0.03em;
+  }
+  .ai-key-input:focus { border-color: rgba(139,92,246,0.5); box-shadow: 0 0 0 3px rgba(139,92,246,0.08); }
+  .ai-key-input::placeholder { color: var(--muted); }
+  .ai-key-status { font-family: var(--mono); font-size: 0.7rem; color: var(--green); margin-top: 0.5rem; }
+
+  .ai-section { margin-bottom: 2rem; }
+  .ai-section-title {
+    font-family: var(--cond);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #A78BFA;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .ai-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(139,92,246,0.3), transparent);
+  }
+
+  .ai-action-btn {
+    background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(139,92,246,0.2));
+    border: 1px solid rgba(139,92,246,0.3);
+    color: #C4B5FD;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .ai-action-btn:hover { background: rgba(139,92,246,0.25); border-color: #A78BFA; }
+  .ai-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .ai-chat-input-wrap {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .ai-chat-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.7rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text);
+    outline: none;
+  }
+  .ai-chat-input:focus { border-color: rgba(139,92,246,0.5); }
+  .ai-chat-input::placeholder { color: var(--muted); }
+  .ai-send-btn {
+    background: #8B5CF6;
+    border: none;
+    color: white;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.7rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.2s;
+  }
+  .ai-send-btn:hover { background: #A78BFA; }
+  .ai-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .ai-result {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-top: 1rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .ai-result.loading {
+    color: #A78BFA;
+    text-align: center;
+    animation: aiPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes aiPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  .ai-anon-notice {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    background: rgba(16,185,129,0.06);
+    border: 1px solid rgba(16,185,129,0.15);
+    border-radius: 4px;
+    padding: 0.4rem 0.7rem;
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .ai-anon-notice::before { content: '🔒'; font-size: 0.7rem; }
 </style>
 </head>
 <body>
@@ -1933,6 +2412,10 @@
 
   <!-- PROGRESS SCREEN -->
   <div id="screen-progress">
+    <div class="progress-orb progress-orb--1"></div>
+    <div class="progress-orb progress-orb--2"></div>
+    <div class="progress-orb progress-orb--3"></div>
+    <canvas class="progress-bg-canvas" id="progress-canvas"></canvas>
     <div class="progress-header">
       <button class="back-btn" id="progress-back-btn">← Back</button>
       <div>
@@ -1943,8 +2426,71 @@
         <span class="download-pdf-btn-icon">&#128196;</span>
         <span class="download-pdf-btn-label">Download PDF</span>
       </div>
+      <div class="ai-btn" id="open-ai-btn" title="AI-Powered Analysis">
+        <span class="ai-btn-icon">&#9889;</span>
+        <span class="ai-btn-label">AI Insights</span>
+      </div>
     </div>
     <div class="progress-body" id="progress-body"></div>
+  </div>
+
+  <!-- AI SCREEN -->
+  <div id="screen-ai">
+    <div class="ai-header">
+      <button class="back-btn" id="ai-back-btn">← Back</button>
+      <div>
+        <div class="ai-title">AI <span>Insights</span></div>
+        <div class="ai-subtitle">Powered by Claude Haiku · Anonymized</div>
+      </div>
+      <div class="ai-tabs">
+        <button class="ai-tab active" data-aitab="summary">Summary</button>
+        <button class="ai-tab" data-aitab="query">Ask Data</button>
+        <button class="ai-tab" data-aitab="predict">Predictions</button>
+      </div>
+    </div>
+    <div class="ai-body" id="ai-body">
+      <div class="ai-key-input-wrap" id="ai-key-wrap">
+        <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:#A78BFA;margin-bottom:0.5rem">ENTER YOUR CLAUDE API KEY</div>
+        <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.75rem">Key is stored only in this browser session. Never saved or transmitted elsewhere.</div>
+        <input type="password" class="ai-key-input" id="ai-api-key" placeholder="sk-ant-api03-..."/>
+        <div><button class="ai-action-btn" id="ai-key-save-btn">Save Key &amp; Continue</button></div>
+        <div class="ai-key-status" id="ai-key-status"></div>
+      </div>
+      <div id="ai-content" style="display:none">
+        <div class="ai-anon-notice">All section names, station names, loco IDs, and division names are anonymized before sending to Claude. Real names never leave your browser.</div>
+
+        <!-- Summary Tab -->
+        <div class="ai-section" id="ai-tab-summary">
+          <div class="ai-section-title">Auto-Summary &amp; Anomaly Detection</div>
+          <div style="margin-bottom:1rem">
+            <button class="ai-action-btn" id="ai-btn-summary">Generate Summary</button>
+            <button class="ai-action-btn" id="ai-btn-anomaly">Detect Anomalies</button>
+          </div>
+          <div class="ai-result" id="ai-result-summary" style="display:none"></div>
+        </div>
+
+        <!-- Query Tab -->
+        <div class="ai-section" id="ai-tab-query" style="display:none">
+          <div class="ai-section-title">Ask Questions About Your Data</div>
+          <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem">Examples: "Which divisions have less than 50% completion?" · "List sections with no trial dates" · "Compare Mumbai and Pune progress"</div>
+          <div class="ai-chat-input-wrap">
+            <input type="text" class="ai-chat-input" id="ai-query-input" placeholder="Ask anything about your verification data..."/>
+            <button class="ai-send-btn" id="ai-query-send">Ask</button>
+          </div>
+          <div class="ai-result" id="ai-result-query" style="display:none"></div>
+        </div>
+
+        <!-- Predictions Tab -->
+        <div class="ai-section" id="ai-tab-predict" style="display:none">
+          <div class="ai-section-title">Completion Prediction &amp; Recommendations</div>
+          <div style="margin-bottom:1rem">
+            <button class="ai-action-btn" id="ai-btn-predict">Predict Completion Timeline</button>
+            <button class="ai-action-btn" id="ai-btn-priority">Priority Recommendations</button>
+          </div>
+          <div class="ai-result" id="ai-result-predict" style="display:none"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2853,9 +3399,11 @@ var _jsonpCounter = 0;
 function fetchSheetJSONP(sheetName, callback) {
   var callbackName = '_gsheetCb' + (_jsonpCounter++);
   var url = 'https://docs.google.com/spreadsheets/d/' + GSHEET_ID +
-    '/gviz/tq?tqx=responseHandler:' + callbackName + '&sheet=' + encodeURIComponent(sheetName);
+    '/gviz/tq?tqx=responseHandler:' + callbackName + 
+    '&sheet=' + encodeURIComponent(sheetName) +
+    '&tq=' + encodeURIComponent('select *');
   
-  console.log('[GSheet] JSONP fetch:', sheetName);
+  console.log('[GSheet] JSONP fetch:', sheetName, url);
   
   window[callbackName] = function(response) {
     // Clean up
@@ -2865,7 +3413,8 @@ function fetchSheetJSONP(sheetName, callback) {
     
     if (response && response.table) {
       var rows = gvizTableToRows(response.table);
-      console.log('[GSheet] Parsed', sheetName, ':', rows.length, 'rows');
+      console.log('[GSheet] Parsed', sheetName, ':', rows.length, 'rows', 
+        '(cols:', response.table.cols ? response.table.cols.length : '?', ')');
       callback(null, rows);
     } else {
       var errMsg = (response && response.errors && response.errors.length) ?
@@ -2892,6 +3441,9 @@ function gvizTableToRows(table) {
   var rows = [];
   if (!table || !table.rows) return rows;
   
+  // Get total column count from table.cols
+  var numCols = (table.cols && table.cols.length) ? table.cols.length : 0;
+  
   table.rows.forEach(function(row) {
     var r = [];
     if (row.c) {
@@ -2904,6 +3456,8 @@ function gvizTableToRows(table) {
         }
       });
     }
+    // Pad row to full column count (Google API may truncate trailing empty cells)
+    while (r.length < numCols) r.push('');
     rows.push(r);
   });
   return rows;
@@ -2912,35 +3466,68 @@ function gvizTableToRows(table) {
 function parseDivisionFromRows(rawRows, config) {
   var sections = [];
   var startRow = config.headerRows || 2;
+  var skipped = { empty: 0, short: 0, number: 0, header: 0, formula: 0 };
   console.log('[Parse]', config.name, '- total rows:', rawRows.length, 'startRow:', startRow);
+  
+  // Debug: log first few data rows to understand structure
+  for (var d = startRow; d < Math.min(startRow + 3, rawRows.length); d++) {
+    console.log('[Parse]', config.name, '- sample row', d, ':', JSON.stringify(rawRows[d]));
+  }
+  
+  var lastFrom = ''; // carry forward for merged cells
   
   for (var i = startRow; i < rawRows.length; i++) {
     var row = rawRows[i];
-    if (!row || row.length < 2) continue;
+    if (!row || row.length === 0) { skipped.short++; continue; }
 
     var sectionName = '';
     if (config.sectionFromCol !== undefined) {
       sectionName = String(row[config.sectionFromCol] || '').trim();
     } else {
       var from = String(row[config.fromCol] || '').trim();
-      var to = config.toCol >= 0 ? String(row[config.toCol] || '').trim() : '';
+      var to = (config.toCol !== undefined && config.toCol < row.length) ? String(row[config.toCol] || '').trim() : '';
+      
+      // If the expected 'to' column is empty, try adjacent columns between from and to
+      if (!to && config.toCol !== undefined) {
+        for (var tryCol = config.fromCol + 1; tryCol <= config.toCol + 1 && tryCol < row.length; tryCol++) {
+          if (tryCol === config.fromCol) continue;
+          var tryVal = String(row[tryCol] || '').trim();
+          if (tryVal && tryVal.toLowerCase() !== from.toLowerCase() && !/^\d+\.?\d*$/.test(tryVal)) {
+            to = tryVal;
+            break;
+          }
+        }
+      }
+      
+      // Carry forward from merged cells: if from is empty but to has value, use last from
+      if (!from && to && lastFrom) {
+        from = lastFrom;
+      }
+      if (from) lastFrom = from;
+      
       if (from && to) {
         sectionName = from + ' - ' + to;
       } else if (from) {
         sectionName = from;
+      } else if (to) {
+        sectionName = to;
       }
     }
 
-    if (!sectionName) continue;
+    if (!sectionName) { skipped.empty++; continue; }
     
     var nameLower = sectionName.toLowerCase();
-    if (/^\d+\.?\d*$/.test(sectionName)) continue;
-    if (nameLower === 'from' || nameLower === 'to' || nameLower === 'from - to') continue;
-    if (nameLower === '#' || nameLower === 'total' || nameLower === 'completed') continue;
-    if (sectionName.indexOf('=') === 0) continue;
-    if (nameLower.indexOf('station/section') !== -1) continue;
-    if (nameLower.indexOf('block section') === 0 && nameLower.length < 20) continue;
-    if (nameLower === 'date' || (nameLower.indexOf('date') === 0 && sectionName.length < 8)) continue;
+    
+    // Only skip pure numbers (serial numbers like "1", "2", "33")
+    if (/^\d+\.?\d*$/.test(sectionName)) { skipped.number++; continue; }
+    
+    // Skip obvious header/label rows — very conservative exact matches only
+    if (nameLower === 'from' || nameLower === 'to' || nameLower === 'from - to') { skipped.header++; continue; }
+    if (nameLower === '#' || nameLower === 'sr' || nameLower === 'sr.' || nameLower === 'sr. no' || nameLower === 'sr. no.') { skipped.header++; continue; }
+    if (nameLower === 'total' || nameLower === 'grand total') { skipped.header++; continue; }
+    if (sectionName.indexOf('=') === 0) { skipped.formula++; continue; }
+    if (nameLower === 'station/section name' || nameLower === 'station/section names') { skipped.header++; continue; }
+    if (nameLower === 'block section names' || nameLower === 'block section name' || nameLower === 'block section') { skipped.header++; continue; }
 
     var statusVal = String(row[config.statusCol] || '').trim().toLowerCase();
     var status = 'pending';
@@ -2948,7 +3535,17 @@ function parseDivisionFromRows(rawRows, config) {
       status = 'completed';
     } else if (statusVal.indexOf('pending') !== -1) {
       status = 'pending';
-    } else if (statusVal && statusVal.indexOf('trial not done') === -1 && statusVal.indexOf('not') === -1 && statusVal.length > 1) {
+    } else if (statusVal.indexOf('trial not done') !== -1 || statusVal.indexOf('trail not done') !== -1 || statusVal.indexOf('not there') !== -1 || statusVal.indexOf('not available') !== -1) {
+      status = 'pending';
+    } else if (statusVal.indexOf('loco not enter') !== -1 || statusVal.indexOf('no 3rd line') !== -1 || statusVal.indexOf('no third line') !== -1) {
+      status = 'pending';
+    } else if (statusVal.indexOf('block section') !== -1 || statusVal.indexOf('block not') !== -1) {
+      // Comments like "In this block section there is no 3rd line"
+      status = 'pending';
+    } else if (statusVal.indexOf('rodo') !== -1 || statusVal.indexOf('lidar') !== -1) {
+      // Tool/method names used in some sheets
+      status = 'in-progress';
+    } else if (statusVal && statusVal.length > 1) {
       status = 'in-progress';
     }
 
@@ -2959,7 +3556,8 @@ function parseDivisionFromRows(rawRows, config) {
     });
   }
   console.log('[Parse]', config.name, '- found', sections.length, 'sections,', 
-    sections.filter(function(s){return s.status==='completed'}).length, 'completed');
+    sections.filter(function(s){return s.status==='completed'}).length, 'completed',
+    '| Skipped:', JSON.stringify(skipped));
   return sections;
 }
 
@@ -2971,13 +3569,13 @@ function fetchAllDivisions(callback) {
     fetchSheetJSONP(div.sheet, function(err, rows) {
       if (err) {
         console.error('[GSheet] Error for', div.name, ':', err);
-        results[div.name] = { config: div, sections: [], error: err };
+        results[div.name] = { config: div, sections: [], error: err, rawRows: [] };
       } else {
         var configWithName = {};
         for (var k in div) configWithName[k] = div[k];
         configWithName.name = div.name;
         var sections = parseDivisionFromRows(rows, configWithName);
-        results[div.name] = { config: div, sections: sections, error: null };
+        results[div.name] = { config: div, sections: sections, error: null, rawRows: rows };
       }
       pending--;
       if (pending === 0) {
@@ -3051,7 +3649,16 @@ function updateProgressBtnPct() {
 
 function renderProgressPage() {
   var body = document.getElementById('progress-body');
-  body.innerHTML = '<div style="text-align:center;padding:4rem 2rem"><div style="font-family:var(--mono);font-size:1rem;color:var(--amber);margin-bottom:1rem">LOADING DATA FROM GOOGLE SHEETS...</div><div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted)">Fetching ' + DIVISIONS.length + ' division sheets</div></div>';
+  body.innerHTML = '<div style="text-align:center;padding:4rem 2rem;animation:progressFadeIn 0.5s ease forwards">' +
+    '<div style="width:80px;height:80px;margin:0 auto 1.5rem;position:relative">' +
+    '<div style="position:absolute;inset:0;border:2px solid rgba(245,158,11,0.15);border-radius:50%"></div>' +
+    '<div style="position:absolute;inset:4px;border:2px solid transparent;border-top-color:var(--amber);border-radius:50%;animation:progressSpin 1s linear infinite"></div>' +
+    '<div style="position:absolute;inset:10px;border:2px solid transparent;border-top-color:var(--green);border-radius:50%;animation:progressSpin 1.5s linear infinite reverse"></div>' +
+    '<div style="position:absolute;inset:50%;width:6px;height:6px;margin:-3px;background:var(--amber);border-radius:50%;box-shadow:0 0 12px var(--amber)"></div>' +
+    '</div>' +
+    '<div style="font-family:var(--mono);font-size:1rem;color:var(--amber);margin-bottom:0.5rem;letter-spacing:0.15em;text-transform:uppercase">Loading Live Data</div>' +
+    '<div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted)">Fetching ' + DIVISIONS.length + ' division sheets from Google Sheets</div>' +
+    '</div>';
   
   fetchAllDivisions(function(divisionData) {
     gsheetCache = divisionData;
@@ -3072,11 +3679,11 @@ function renderProgressPage() {
       return;
     }
     
-    renderProgressContent(body, p);
+    renderProgressContent(body, p, divisionData);
   });
 }
 
-function renderProgressContent(body, p) {
+function renderProgressContent(body, p, divisionData) {
   var pct = p.pct;
 
   // Donut chart math
@@ -3095,9 +3702,27 @@ function renderProgressContent(body, p) {
   // Donut
   html += '<div class="donut-container">';
   html += '<svg class="donut-svg" viewBox="0 0 220 220">';
+  html += '<defs>';
+  html += '<filter id="glow-green"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  html += '<filter id="glow-amber"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  html += '</defs>';
+  // Tick marks ring
+  for (var t = 0; t < 60; t++) {
+    var angle = (t / 60) * 360;
+    var isMajor = t % 5 === 0;
+    var len = isMajor ? 6 : 3;
+    var outerR = 108;
+    var innerR = outerR - len;
+    var rad = angle * Math.PI / 180;
+    var x1 = 110 + outerR * Math.cos(rad);
+    var y1 = 110 + outerR * Math.sin(rad);
+    var x2 = 110 + innerR * Math.cos(rad);
+    var y2 = 110 + innerR * Math.sin(rad);
+    html += '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="rgba(245,158,11,'+(isMajor?'0.2':'0.08')+')" stroke-width="'+(isMajor?'1.5':'0.8')+'"/>';
+  }
   html += '<circle class="donut-track" cx="110" cy="110" r="' + radius + '"/>';
-  html += '<circle class="donut-fill" cx="110" cy="110" r="' + radius + '" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + circumference + '" id="donut-arc-partial" style="stroke:var(--amber);opacity:0.5"/>';
-  html += '<circle class="donut-fill-green" cx="110" cy="110" r="' + radius + '" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + circumference + '" id="donut-arc"/>';
+  html += '<circle class="donut-fill" cx="110" cy="110" r="' + radius + '" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + circumference + '" id="donut-arc-partial" style="stroke:var(--amber);opacity:0.5" filter="url(#glow-amber)"/>';
+  html += '<circle class="donut-fill-green" cx="110" cy="110" r="' + radius + '" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + circumference + '" id="donut-arc" filter="url(#glow-green)"/>';
   html += '</svg>';
   html += '<div class="donut-center">';
   html += '<div class="donut-pct" id="donut-pct-val">0%</div>';
@@ -3114,31 +3739,35 @@ function renderProgressContent(body, p) {
   html += '</div>';
   html += '</div>';
 
-  // Progress bar
-  html += '<div style="margin-bottom:2rem">';
+  // Progress bar with shimmer
+  html += '<div style="margin-bottom:2rem;animation:progressFadeIn 0.7s ease forwards 0.3s;opacity:0">';
   html += '<div style="display:flex;justify-content:space-between;margin-bottom:0.4rem">';
   html += '<span style="font-family:var(--mono);font-size:0.75rem;font-weight:600;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase">Overall Progress</span>';
   html += '<span style="font-family:var(--mono);font-size:0.75rem;font-weight:700;color:var(--amber)">' + p.completed + ' / ' + p.total + ' complete</span>';
   html += '</div>';
-  html += '<div style="height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;display:flex">';
-  html += '<div id="progress-bar-fill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),#34D399);border-radius:4px 0 0 4px;transition:width 1.5s cubic-bezier(0.4,0,0.2,1);box-shadow:0 0 8px rgba(16,185,129,0.4)"></div>';
-  html += '<div id="progress-bar-partial" style="height:100%;width:0%;background:linear-gradient(90deg,var(--amber),var(--amber2));transition:width 1.5s cubic-bezier(0.4,0,0.2,1);opacity:0.6"></div>';
+  html += '<div class="progress-bar-container" style="display:flex">';
+  html += '<div id="progress-bar-fill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--green),#34D399);border-radius:4px 0 0 4px;transition:width 1.8s cubic-bezier(0.4,0,0.2,1);box-shadow:0 0 12px rgba(16,185,129,0.5);position:relative;z-index:1"></div>';
+  html += '<div id="progress-bar-partial" style="height:100%;width:0%;background:linear-gradient(90deg,var(--amber),var(--amber2));transition:width 1.8s cubic-bezier(0.4,0,0.2,1);opacity:0.6;position:relative;z-index:1"></div>';
   html += '</div>';
   html += '</div>';
 
   // ── DIVISION SUMMARY CARDS ──
   html += '<div class="progress-section-title">Division Summary</div>';
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.75rem;margin-bottom:2rem">';
-  p.divisions.forEach(function(div) {
+  p.divisions.forEach(function(div, idx) {
     var barW = div.total ? Math.round((div.completed / div.total) * 100) : 0;
-    html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem;cursor:pointer" class="div-card" data-div="' + div.name + '">';
-    html += '<div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--text);margin-bottom:0.5rem">' + div.name + '</div>';
+    var isComplete = barW === 100;
+    html += '<div class="div-summary-card div-card" data-div="' + div.name + '" style="animation-delay:' + (idx * 0.08) + 's">';
+    html += '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">';
+    html += '<div style="width:8px;height:8px;border-radius:50%;background:' + (isComplete ? 'var(--green)' : barW > 0 ? 'var(--amber)' : 'var(--red)') + ';box-shadow:0 0 8px ' + (isComplete ? 'rgba(16,185,129,0.5)' : barW > 0 ? 'rgba(245,158,11,0.5)' : 'rgba(239,68,68,0.3)') + ';flex-shrink:0"></div>';
+    html += '<div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--text)">' + div.name + '</div>';
+    html += '</div>';
     html += '<div style="display:flex;justify-content:space-between;margin-bottom:0.3rem">';
     html += '<span style="font-family:var(--mono);font-size:0.75rem;font-weight:600;color:var(--green)">' + div.completed + '/' + div.total + '</span>';
-    html += '<span style="font-family:var(--mono);font-size:0.75rem;font-weight:700;color:var(--amber)">' + barW + '%</span>';
+    html += '<span style="font-family:var(--mono);font-size:0.75rem;font-weight:700;color:' + (isComplete ? 'var(--green)' : 'var(--amber)') + '">' + barW + '%</span>';
     html += '</div>';
-    html += '<div style="height:5px;background:var(--bg4);border-radius:3px;overflow:hidden">';
-    html += '<div style="height:100%;width:' + barW + '%;background:var(--green);border-radius:3px;transition:width 0.8s ease"></div>';
+    html += '<div style="height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;position:relative">';
+    html += '<div style="height:100%;width:' + barW + '%;background:linear-gradient(90deg,' + (isComplete ? 'var(--green),#34D399' : 'var(--amber),var(--amber2)') + ');border-radius:3px;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);box-shadow:0 0 6px ' + (isComplete ? 'rgba(16,185,129,0.4)' : 'rgba(245,158,11,0.4)') + '"></div>';
     html += '</div>';
     html += '</div>';
   });
@@ -3178,6 +3807,62 @@ function renderProgressContent(body, p) {
   });
   html += '</div>';
 
+  // ── DEBUG: RAW DATA DUMP ──
+  html += '<div class="progress-section-title" style="margin-top:2rem">Debug: Raw API Data</div>';
+  html += '<div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:1rem">This section shows raw data from Google Sheets API for debugging. Remove after fixing.</div>';
+  
+  if (divisionData) {
+    DIVISIONS.forEach(function(div) {
+      var data = divisionData[div.name];
+      if (!data) return;
+      var rawRows = data.rawRows || [];
+      var sections = data.sections || [];
+      var cfg = div;
+      
+      html += '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1rem">';
+      html += '<div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--amber);margin-bottom:0.5rem">' + div.name + ' (sheet: ' + div.sheet + ')</div>';
+      html += '<div style="font-family:var(--mono);font-size:0.7rem;color:var(--text2);margin-bottom:0.3rem">Config: fromCol=' + (cfg.fromCol !== undefined ? cfg.fromCol : 'N/A') + ', toCol=' + (cfg.toCol !== undefined ? cfg.toCol : 'N/A') + ', sectionFromCol=' + (cfg.sectionFromCol !== undefined ? cfg.sectionFromCol : 'N/A') + ', statusCol=' + cfg.statusCol + ', headerRows=' + cfg.headerRows + '</div>';
+      html += '<div style="font-family:var(--mono);font-size:0.7rem;color:var(--green);margin-bottom:0.3rem">Total raw rows: ' + rawRows.length + ' | Parsed sections: ' + sections.length + '</div>';
+      
+      if (data.error) {
+        html += '<div style="font-family:var(--mono);font-size:0.7rem;color:var(--red)">ERROR: ' + data.error + '</div>';
+      }
+      
+      // Show first 3 raw rows (from beginning)
+      html += '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:0.5rem;overflow-x:auto">';
+      html += '<div style="color:var(--amber);margin-bottom:0.3rem">First 3 rows (from row 0):</div>';
+      for (var ri = 0; ri < Math.min(3, rawRows.length); ri++) {
+        var row = rawRows[ri];
+        var cols = [];
+        for (var ci = 0; ci < Math.min(row.length, 10); ci++) {
+          cols.push(ci + '="' + (row[ci] || '').substring(0, 30) + '"');
+        }
+        html += '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">Row ' + ri + ': ' + cols.join(' | ') + '</div>';
+      }
+      html += '<div style="color:var(--amber);margin-top:0.3rem;margin-bottom:0.3rem">Data rows (after header ' + cfg.headerRows + ') — first 3:</div>';
+      for (var ri = cfg.headerRows; ri < Math.min(cfg.headerRows + 3, rawRows.length); ri++) {
+        var row = rawRows[ri];
+        var cols = [];
+        for (var ci = 0; ci < Math.min(row.length, 10); ci++) {
+          cols.push(ci + '="' + (row[ci] || '').substring(0, 30) + '"');
+        }
+        html += '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">Row ' + ri + ': ' + cols.join(' | ') + '</div>';
+      }
+      html += '<div style="color:var(--amber);margin-top:0.3rem;margin-bottom:0.3rem">Last 3 rows:</div>';
+      for (var ri = Math.max(0, rawRows.length - 3); ri < rawRows.length; ri++) {
+        var row = rawRows[ri];
+        var cols = [];
+        for (var ci = 0; ci < Math.min(row.length, 10); ci++) {
+          cols.push(ci + '="' + (row[ci] || '').substring(0, 30) + '"');
+        }
+        html += '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">Row ' + ri + ': ' + cols.join(' | ') + '</div>';
+      }
+      html += '</div>';
+      
+      html += '</div>';
+    });
+  }
+
   body.innerHTML = html;
 
   // Animate donut and bars
@@ -3205,7 +3890,9 @@ function renderProgressContent(body, p) {
     items.forEach(function(item) {
       var matchDiv = (divFilter === 'all') || (item.dataset.pdiv === divFilter);
       var matchStatus = (statusFilter === 'all') || (item.dataset.pstatus === statusFilter);
-      item.style.display = (matchStatus && matchDiv) ? 'flex' : 'none';
+      var show = matchStatus && matchDiv;
+      item.style.display = show ? 'flex' : 'none';
+      if (show) { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }
       
       // Count items matching the division filter (regardless of status filter)
       if (matchDiv) {
@@ -3260,6 +3947,12 @@ function renderProgressContent(body, p) {
       if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
+
+  // Ensure all items visible on initial load
+  divFilter = 'all';
+  statusFilter = 'all';
+  if (divSelect) divSelect.value = 'all';
+  applyFilters();
 }
 
 function animateNumber(el, from, to, duration) {
@@ -3287,6 +3980,78 @@ document.addEventListener('DOMContentLoaded', function() {
   function openProgressScreen() {
     renderProgressPage();
     screenP.classList.add('visible');
+    startProgressCanvas();
+  }
+
+  // Constellation / particle canvas animation
+  var progressAnimFrame = null;
+  function startProgressCanvas() {
+    var canvas = document.getElementById('progress-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W, H, particles = [];
+    var numParticles = 50;
+    var connectionDist = 140;
+    
+    function resize() {
+      W = canvas.width = canvas.offsetWidth;
+      H = canvas.height = canvas.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    
+    // Init particles
+    particles = [];
+    for (var i = 0; i < numParticles; i++) {
+      particles.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        r: Math.random() * 2 + 0.5,
+        color: ['rgba(245,158,11,','rgba(16,185,129,','rgba(59,130,246,'][Math.floor(Math.random()*3)]
+      });
+    }
+    
+    function drawFrame() {
+      ctx.clearRect(0, 0, W, H);
+      
+      // Update + draw particles
+      for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+        
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + '0.6)';
+        ctx.fill();
+        
+        // Draw connections
+        for (var j = i + 1; j < particles.length; j++) {
+          var q = particles[j];
+          var dx = p.x - q.x;
+          var dy = p.y - q.y;
+          var dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < connectionDist) {
+            var alpha = (1 - dist / connectionDist) * 0.15;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(q.x, q.y);
+            ctx.strokeStyle = p.color + alpha + ')';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+      
+      progressAnimFrame = requestAnimationFrame(drawFrame);
+    }
+    
+    if (progressAnimFrame) cancelAnimationFrame(progressAnimFrame);
+    drawFrame();
   }
 
   if (openBtn) {
@@ -3298,6 +4063,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (backBtn) {
     backBtn.addEventListener('click', function() {
       screenP.classList.remove('visible');
+      if (progressAnimFrame) { cancelAnimationFrame(progressAnimFrame); progressAnimFrame = null; }
     });
   }
 
@@ -3514,6 +4280,270 @@ function generateProgressPDF() {
   printWin.document.write(printHTML);
   printWin.document.close();
 }
+</script>
+
+<script>
+// ── AI INSIGHTS MODULE ─────────────────────────────────────────────────
+(function() {
+  var aiApiKey = '';
+  var anonMap = {};
+  var reverseMap = {};
+  var anonCounter = 0;
+
+  // ── ANONYMIZATION ──
+  function anonymize(text) {
+    if (!text) return '';
+    var result = text;
+    // Replace each known real name with its anonymous version
+    var keys = Object.keys(anonMap).sort(function(a,b){ return b.length - a.length; }); // longest first
+    keys.forEach(function(real) {
+      var regex = new RegExp(real.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      result = result.replace(regex, anonMap[real]);
+    });
+    return result;
+  }
+
+  function deanonymize(text) {
+    if (!text) return '';
+    var result = text;
+    var keys = Object.keys(reverseMap).sort(function(a,b){ return b.length - a.length; });
+    keys.forEach(function(anon) {
+      var regex = new RegExp(anon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      result = result.replace(regex, reverseMap[anon]);
+    });
+    return result;
+  }
+
+  function addAnonMapping(realName, prefix) {
+    if (!realName || anonMap[realName]) return anonMap[realName] || realName;
+    anonCounter++;
+    var anonName = prefix + '-' + anonCounter;
+    anonMap[realName] = anonName;
+    reverseMap[anonName] = realName;
+    return anonName;
+  }
+
+  function buildAnonMaps(progressData) {
+    anonMap = {};
+    reverseMap = {};
+    anonCounter = 0;
+    // Anonymize division names
+    if (progressData && progressData.divisions) {
+      progressData.divisions.forEach(function(div, i) {
+        addAnonMapping(div.name, 'Division');
+      });
+    }
+    // Anonymize section names
+    if (progressData && progressData.items) {
+      progressData.items.forEach(function(item) {
+        addAnonMapping(item.name, 'Section');
+      });
+    }
+  }
+
+  function buildAnonymizedDataString(progressData) {
+    buildAnonMaps(progressData);
+    var lines = [];
+    lines.push('OVERALL: ' + progressData.total + ' sections, ' + progressData.completed + ' completed, ' + progressData.inProgress + ' in-progress, ' + progressData.pending + ' pending (' + progressData.pct + '% complete)');
+    lines.push('');
+    progressData.divisions.forEach(function(div) {
+      var anonDiv = anonMap[div.name] || div.name;
+      lines.push(anonDiv + ': ' + div.total + ' sections, ' + div.completed + ' completed, ' + div.inProgress + ' in-progress, ' + div.pending + ' pending (' + div.pct + '%)');
+    });
+    lines.push('');
+    lines.push('SECTION DETAILS:');
+    progressData.items.forEach(function(item) {
+      var anonSec = anonMap[item.name] || item.name;
+      var anonDiv = anonMap[item.division] || item.division;
+      var dates = '';
+      if (item.trialDates && item.trialDates.length) {
+        dates = ' | Dates: ' + item.trialDates.map(function(d){ return d.label + '=' + (d.value || 'none'); }).join(', ');
+      }
+      lines.push(anonSec + ' [' + anonDiv + '] status=' + item.status + dates);
+    });
+    return lines.join('\n');
+  }
+
+  // ── API CALL ──
+  function callClaude(prompt, resultElId, systemPrompt) {
+    var el = document.getElementById(resultElId);
+    el.style.display = 'block';
+    el.className = 'ai-result loading';
+    el.textContent = 'Analyzing data with Claude Haiku...';
+
+    var body = JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
+      system: systemPrompt || 'You are a railway RFID tag verification data analyst. Provide concise, actionable insights. Use bullet points. Be specific with numbers.',
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://api.anthropic.com/v1/messages', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('x-api-key', aiApiKey);
+    xhr.setRequestHeader('anthropic-version', '2023-06-01');
+    xhr.setRequestHeader('anthropic-dangerous-direct-browser-access', 'true');
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          var text = resp.content.map(function(c){ return c.text || ''; }).join('\n');
+          // Deanonymize before displaying
+          el.className = 'ai-result';
+          el.textContent = deanonymize(text);
+        } catch(e) {
+          el.className = 'ai-result';
+          el.textContent = 'Error parsing response: ' + e.message;
+        }
+      } else {
+        el.className = 'ai-result';
+        try {
+          var err = JSON.parse(xhr.responseText);
+          el.textContent = 'API Error (' + xhr.status + '): ' + (err.error && err.error.message || xhr.responseText);
+        } catch(e2) {
+          el.textContent = 'API Error (' + xhr.status + '): ' + xhr.responseText.substring(0, 200);
+        }
+      }
+    };
+    xhr.onerror = function() {
+      el.className = 'ai-result';
+      el.textContent = 'Network error. Check your internet connection and API key.';
+    };
+    xhr.send(body);
+  }
+
+  // ── FEATURE FUNCTIONS ──
+  function getProgressDataSafe() {
+    if (typeof gsheetCache !== 'undefined' && gsheetCache && typeof getProgressFromSheet === 'function') {
+      return getProgressFromSheet(gsheetCache);
+    }
+    return null;
+  }
+
+  function runSummary() {
+    var p = getProgressDataSafe();
+    if (!p) { alert('Please open the Progress page first to load data.'); return; }
+    var data = buildAnonymizedDataString(p);
+    var prompt = 'Here is RFID tag verification progress data for a railway system (names anonymized):\n\n' + data + '\n\nProvide a concise executive summary covering:\n1. Overall completion status\n2. Top performing divisions\n3. Divisions needing attention\n4. Key statistics and highlights\nKeep it under 300 words.';
+    callClaude(prompt, 'ai-result-summary');
+  }
+
+  function runAnomaly() {
+    var p = getProgressDataSafe();
+    if (!p) { alert('Please open the Progress page first to load data.'); return; }
+    var data = buildAnonymizedDataString(p);
+    var prompt = 'Here is RFID tag verification progress data (names anonymized):\n\n' + data + '\n\nDetect anomalies and unusual patterns:\n1. Sections with missing trial dates that should have them\n2. Divisions with unusually low completion rates\n3. Any inconsistencies in the data\n4. Sections marked as completed but missing dates, or vice versa\nBe specific — reference exact section and division codes.';
+    callClaude(prompt, 'ai-result-summary');
+  }
+
+  function runQuery(question) {
+    var p = getProgressDataSafe();
+    if (!p) { alert('Please open the Progress page first to load data.'); return; }
+    var data = buildAnonymizedDataString(p);
+    var anonQuestion = anonymize(question);
+    var prompt = 'Here is RFID tag verification progress data (names anonymized):\n\n' + data + '\n\nAnswer this question about the data: ' + anonQuestion + '\n\nBe specific and reference exact codes from the data. Use numbers.';
+    callClaude(prompt, 'ai-result-query');
+  }
+
+  function runPredict() {
+    var p = getProgressDataSafe();
+    if (!p) { alert('Please open the Progress page first to load data.'); return; }
+    var data = buildAnonymizedDataString(p);
+    var prompt = 'Here is RFID tag verification progress data with trial dates (names anonymized):\n\n' + data + '\n\nBased on the trial dates and completion patterns:\n1. Estimate when each division will reach 100% completion\n2. Identify the current completion velocity (sections completed per week)\n3. Flag divisions that may miss deadlines\n4. Give an overall project completion estimate\nUse the date patterns to extrapolate. Be realistic.';
+    callClaude(prompt, 'ai-result-predict');
+  }
+
+  function runPriority() {
+    var p = getProgressDataSafe();
+    if (!p) { alert('Please open the Progress page first to load data.'); return; }
+    var data = buildAnonymizedDataString(p);
+    var prompt = 'Here is RFID tag verification progress data (names anonymized):\n\n' + data + '\n\nProvide priority recommendations:\n1. Rank divisions by urgency (lowest completion first)\n2. For each low-completion division, list the specific pending sections\n3. Suggest an optimal order of operations to maximize completion speed\n4. Identify any quick wins (sections that are in-progress and close to completion)\nBe actionable and specific.';
+    callClaude(prompt, 'ai-result-predict');
+  }
+
+  // ── WIRING ──
+  document.addEventListener('DOMContentLoaded', function() {
+    var screenAi = document.getElementById('screen-ai');
+    var openAiBtn = document.getElementById('open-ai-btn');
+    var aiBackBtn = document.getElementById('ai-back-btn');
+    var keySaveBtn = document.getElementById('ai-key-save-btn');
+    var keyInput = document.getElementById('ai-api-key');
+    var keyStatus = document.getElementById('ai-key-status');
+    var aiContent = document.getElementById('ai-content');
+    var keyWrap = document.getElementById('ai-key-wrap');
+
+    if (openAiBtn) {
+      openAiBtn.addEventListener('click', function() {
+        screenAi.classList.add('visible');
+      });
+    }
+    if (aiBackBtn) {
+      aiBackBtn.addEventListener('click', function() {
+        screenAi.classList.remove('visible');
+      });
+    }
+
+    // API key save
+    if (keySaveBtn) {
+      keySaveBtn.addEventListener('click', function() {
+        var key = keyInput.value.trim();
+        if (!key || key.indexOf('sk-') !== 0) {
+          keyStatus.style.color = '#EF4444';
+          keyStatus.textContent = 'Invalid key. Must start with sk-';
+          return;
+        }
+        aiApiKey = key;
+        keyStatus.style.color = '#10B981';
+        keyStatus.textContent = 'Key saved for this session';
+        setTimeout(function() {
+          keyWrap.style.display = 'none';
+          aiContent.style.display = 'block';
+        }, 500);
+      });
+    }
+
+    // Tab switching
+    document.querySelectorAll('.ai-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        var target = tab.dataset.aitab;
+        document.querySelectorAll('.ai-tab').forEach(function(t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        document.querySelectorAll('.ai-section').forEach(function(s) { s.style.display = 'none'; });
+        var el = document.getElementById('ai-tab-' + target);
+        if (el) el.style.display = 'block';
+      });
+    });
+
+    // Action buttons
+    var btnSummary = document.getElementById('ai-btn-summary');
+    var btnAnomaly = document.getElementById('ai-btn-anomaly');
+    var btnPredict = document.getElementById('ai-btn-predict');
+    var btnPriority = document.getElementById('ai-btn-priority');
+    var querySend = document.getElementById('ai-query-send');
+    var queryInput = document.getElementById('ai-query-input');
+
+    if (btnSummary) btnSummary.addEventListener('click', runSummary);
+    if (btnAnomaly) btnAnomaly.addEventListener('click', runAnomaly);
+    if (btnPredict) btnPredict.addEventListener('click', runPredict);
+    if (btnPriority) btnPriority.addEventListener('click', runPriority);
+    if (querySend) {
+      querySend.addEventListener('click', function() {
+        var q = queryInput.value.trim();
+        if (!q) return;
+        runQuery(q);
+      });
+    }
+    if (queryInput) {
+      queryInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          var q = queryInput.value.trim();
+          if (q) runQuery(q);
+        }
+      });
+    }
+  });
+})();
 </script>
 </body>
 </html>
